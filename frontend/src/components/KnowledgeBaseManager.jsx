@@ -213,7 +213,7 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
   };
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
+    <div className="kb-container" style={{ maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
       {/* ── Top Header Bar ── */}
       <div style={{
         display: 'flex',
@@ -308,7 +308,7 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
             gap: '10px'
           }}>
             {kbs.map((kb) => {
@@ -393,16 +393,11 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
 
       {/* ── Selected Knowledge Base Inspector & Ingestion Studio ── */}
       {selectedKb && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '20px',
-          alignItems: 'start'
-        }}>
+        <div className="kb-inspector-grid">
           {/* LEFT: Documents & Ingestion Zone */}
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                 <div style={{
                   width: '32px',
                   height: '32px',
@@ -411,15 +406,16 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}>
                   <FolderOpen size={16} />
                 </div>
-                <div>
-                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#09090b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {selectedKb.name}
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: '#64748b', flexWrap: 'wrap' }}>
                     <span>Chunk Size: <strong>{selectedKb.chunking_config?.chunk_size || 600}</strong></span>
                     <span>•</span>
                     <span>Overlap: <strong>{selectedKb.chunking_config?.chunk_overlap || 100}</strong></span>
@@ -430,7 +426,7 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
               <button
                 onClick={() => handleDeleteKB(selectedKb.id)}
                 className="btn btn-ghost"
-                style={{ padding: '5px', color: '#94a3b8' }}
+                style={{ padding: '5px', color: '#94a3b8', flexShrink: 0 }}
                 title="Delete this Knowledge Base"
               >
                 <Trash2 size={16} />
@@ -764,7 +760,7 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="kb-modal-slider-grid">
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '5px' }}>
                     Chunk Size ({chunkSize} characters)

@@ -40,7 +40,9 @@ export default function ChatWorkspace({
   const [inputQuery, setInputQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
-  const [showAgentCards, setShowAgentCards] = useState(true);
+  const [showAgentCards, setShowAgentCards] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth > 768 : true
+  );
   const [expandedDetails, setExpandedDetails] = useState({}); // { [msgIndex]: { reasoning: bool, tools: bool } }
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [liveTelemetry, setLiveTelemetry] = useState({
