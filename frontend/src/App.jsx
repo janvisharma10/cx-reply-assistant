@@ -6,6 +6,23 @@ import AgentManager from './components/AgentManager';
 import GuardrailsLab from './components/GuardrailsLab';
 import { fetchHealth, fetchRootMeta, listAgents, listKnowledgeBases } from './services/api';
 
+const KEEP_ALIVE_URLS = [
+  'https://cx-reply-assistant.onrender.com/health',
+  'https://cx-reply-assistant-1.onrender.com/',
+];
+
+// Burst of 10 ping requests to keep Render awake
+async function sendPingBurst() {
+  for (let i = 1; i <= 10; i++) {
+    for (const url of KEEP_ALIVE_URLS) {
+      fetch(url, { mode: 'no-cors' }).catch(() => {});
+    }
+    if (i < 10) {
+      await new Promise((r) => setTimeout(r, 1000)); // 1s spacing between pings in burst
+    }
+  }
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'kb' | 'agents' | 'guardrails'
   const [agents, setAgents] = useState([]);
@@ -50,7 +67,14 @@ export default function App() {
 
   useEffect(() => {
     loadAllData();
-    const interval = setInterval(() => {
+
+    // Burst of 10 pings every 5 minutes (300,000ms)
+    sendPingBurst();
+    const pingInterval = setInterval(() => {
+      sendPingBurst();
+    }, 300000);
+
+    const healthInterval = setInterval(() => {
       fetchHealth()
         .then((res) => {
           const isHealthy = res.status === 'healthy';
@@ -64,7 +88,11 @@ export default function App() {
         })
         .catch(() => setHealthStatus('offline'));
     }, 5000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(pingInterval);
+      clearInterval(healthInterval);
+    };
   }, []);
 
   return (
