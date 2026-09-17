@@ -395,3 +395,307 @@ body {
   background: #f8fafc;
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Responsive Utilities & Mobile Optimization
+   ========================================================================== */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Visibility Utilities */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: flex !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Responsive Page Containers */
+.page-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 12px;
+  }
+}
+
+/* Responsive Grids */
+.responsive-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .responsive-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Chat Layout Responsive */
+.chat-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 18px;
+  height: calc(100vh - 66px);
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    gap: 10px;
+  }
+}
+
+/* Knowledge Base Responsive */
+.kb-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 18px;
+  height: calc(100vh - 66px);
+}
+
+@media (max-width: 768px) {
+  .kb-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 60px);
+    gap: 12px;
+  }
+}
+
+/* Modal Responsive Adaptations */
+@media (max-width: 640px) {
+  .modal-dialog {
+    width: 95vw !important;
+    padding: 18px !important;
+    max-height: 94vh !important;
+  }
+  
+  .btn {
+    padding: 9px 14px;
+  }
+  
+  .badge {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+}
+
+/* ==========================================================================
+   KenzAI Agent OS Design System
+   ========================================================================== */
+
+.kenzai-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #ffffff;
+  width: 100%;
+}
+
+.kenzai-sidebar {
+  width: 250px;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 50;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.kenzai-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .kenzai-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .kenzai-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .kenzai-sidebar-overlay.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 45;
+  }
+}
+
+.kenzai-search-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #fafafa;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.kenzai-search-box:hover {
+  border-color: #cbd5e1;
+}
+
+.kenzai-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  margin: 2px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  width: calc(100% - 20px);
+  text-align: left;
+}
+
+.kenzai-nav-item:hover:not(.active) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.kenzai-nav-item.active {
+  background: #000000;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.kenzai-nav-item.active svg {
+  color: #ffffff;
+}
+
+.kenzai-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 16px 16px 6px;
+}
+
+.kenzai-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.kenzai-topbar {
+  height: 52px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.kenzai-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.kenzai-breadcrumb strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.kenzai-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.kenzai-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.kenzai-card.active-card {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+.kenzai-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #4b5563;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+

@@ -111,7 +111,7 @@ export default function GuardrailsLab() {
   }, [suites, searchQuery, postureFilter]);
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+    <div className="page-container" style={{ maxWidth: '1280px' }}>
       
       {/* ── Top Header Bar (KenzAI OS Style) ── */}
       <div style={{
@@ -288,12 +288,8 @@ export default function GuardrailsLab() {
             </button>
           </div>
 
-          {/* Suites Cards Grid (2 clean columns, plenty of whitespace) */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-            gap: '18px'
-          }}>
+          {/* Suites Cards Grid (Responsive cards) */}
+          <div className="responsive-card-grid">
             {filteredSuites.map((suite) => {
               const isDefault = suite.id === 'suite_standard_cx';
               return (
@@ -434,11 +430,11 @@ export default function GuardrailsLab() {
           background: '#ffffff',
           border: '1px solid var(--border-subtle)',
           borderRadius: '16px',
-          padding: '28px',
+          padding: '20px',
           boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '20px'
+          gap: '18px'
         }}>
           {/* Sandbox Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -550,7 +546,7 @@ export default function GuardrailsLab() {
           </div>
 
           {/* Submit Action */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
               Evaluates against OpenRouter • meta-llama/llama-guard-4-12b
             </span>
@@ -642,18 +638,18 @@ export default function GuardrailsLab() {
           justifyContent: 'center',
           zIndex: 100
         }}>
-          <div className="glass-card" style={{
+          <div className="glass-card modal-dialog" style={{
             width: '600px',
-            maxWidth: '92vw',
+            maxWidth: '94vw',
             maxHeight: '90vh',
             overflowY: 'auto',
-            padding: '28px',
+            padding: '20px',
             background: '#ffffff',
             border: '1px solid var(--border-strong)',
             boxShadow: 'var(--shadow-lg)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '18px'
+            gap: '16px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -777,12 +773,12 @@ export default function GuardrailsLab() {
           justifyContent: 'center',
           zIndex: 100
         }}>
-          <div className="glass-card" style={{
+          <div className="glass-card modal-dialog" style={{
             width: '740px',
-            maxWidth: '92vw',
+            maxWidth: '94vw',
             maxHeight: '90vh',
             overflowY: 'auto',
-            padding: '28px',
+            padding: '20px',
             background: '#ffffff',
             border: '1px solid var(--border-strong)',
             boxShadow: 'var(--shadow-lg)',

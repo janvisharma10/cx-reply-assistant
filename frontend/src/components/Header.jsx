@@ -4,121 +4,141 @@ import {
   Bot, 
   Database, 
   ShieldAlert, 
-  Activity, 
   Sparkles,
   ExternalLink
 } from 'lucide-react';
 
-export default function Header({ activeTab, setActiveTab, healthStatus, systemMeta }) {
+export default function Header({ activeTab, setActiveTab }) {
+  const tabs = [
+    { id: 'chat', label: 'Agent Chat', icon: Bot },
+    { id: 'kb', label: 'Knowledge Bases', icon: Database },
+    { id: 'agents', label: 'Agent Studio', icon: Sparkles },
+    { id: 'guardrails', label: 'Safety Lab', icon: ShieldAlert },
+  ];
+
   return (
     <header style={{
       borderBottom: '1px solid var(--border-subtle)',
-      background: 'rgba(255, 255, 255, 0.95)',
+      background: 'rgba(255, 255, 255, 0.98)',
       backdropFilter: 'blur(16px)',
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      padding: '0 24px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)'
     }}>
       <div style={{
         maxWidth: '1440px',
         margin: '0 auto',
+        padding: '0 16px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: '66px',
-        gap: '20px'
+        flexDirection: 'column'
       }}>
-        {/* Brand & Identity - Minimalist White & Black */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: 'var(--radius-md)',
-            background: '#000000',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
-          }}>
-            <ShieldCheck size={22} color="#ffffff" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#09090b' }}>
-                CX Reply Assistant
-              </h1>
-              <span className="badge badge-monochrome" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
-                Agno • Llama Guard 4
-              </span>
+        {/* Top row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: '56px',
+          gap: '12px'
+        }}>
+          {/* Brand & Identity */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: 'var(--radius-md)',
+              background: '#000000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+              flexShrink: 0
+            }}>
+              <ShieldCheck size={18} color="#ffffff" />
             </div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              Knowledge Base Routing • Safety Guardrails (12B)
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h1 style={{ fontSize: '0.98rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#09090b', whiteSpace: 'nowrap' }}>
+                  CX Reply Assistant
+                </h1>
+                <span className="badge badge-monochrome desktop-only" style={{ fontSize: '0.65rem', padding: '1px 6px' }}>
+                  Agno • Llama Guard 4
+                </span>
+              </div>
+              <p className="desktop-only" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                Knowledge Base Routing • Safety Guardrails (12B)
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Navigation Tabs */}
+          <nav className="desktop-only" style={{ alignItems: 'center', gap: '4px' }}>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`btn ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ padding: '7px 13px', fontSize: '0.8125rem' }}
+                >
+                  <Icon size={14} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="badge badge-safe desktop-only" style={{ padding: '4px 10px' }} title="Input Pre-Hook & Output Post-Hook active">
+              <ShieldCheck size={12} />
+              <span>Llama Guard 4 • 12B</span>
+            </div>
+
+            <a
+              href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-ghost"
+              style={{ padding: '5px 8px', fontSize: '0.75rem' }}
+              title="Open Swagger API Docs"
+            >
+              <span>Docs</span>
+              <ExternalLink size={12} />
+            </a>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`btn ${activeTab === 'chat' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ padding: '7px 14px', fontSize: '0.8125rem' }}
-          >
-            <Bot size={15} />
-            Agent Chat
-          </button>
-
-          <button
-            onClick={() => setActiveTab('kb')}
-            className={`btn ${activeTab === 'kb' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ padding: '7px 14px', fontSize: '0.8125rem' }}
-          >
-            <Database size={15} />
-            Knowledge Bases
-          </button>
-
-          <button
-            onClick={() => setActiveTab('agents')}
-            className={`btn ${activeTab === 'agents' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ padding: '7px 14px', fontSize: '0.8125rem' }}
-          >
-            <Sparkles size={15} />
-            Agent Studio
-          </button>
-
-          <button
-            onClick={() => setActiveTab('guardrails')}
-            className={`btn ${activeTab === 'guardrails' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ padding: '7px 14px', fontSize: '0.8125rem' }}
-          >
-            <ShieldAlert size={15} />
-            Safety Lab
-          </button>
+        {/* Mobile Scrollable Tab Bar */}
+        <nav className="mobile-only no-scrollbar" style={{
+          overflowX: 'auto',
+          paddingBottom: '8px',
+          gap: '6px',
+          width: '100%'
+        }}>
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
+                  borderRadius: 'var(--radius-full)',
+                  flexShrink: 0
+                }}
+              >
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </nav>
-
-        {/* System & Guardrail Status Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Llama Guard 4 Pill */}
-          <div className="badge badge-safe" style={{ padding: '5px 12px' }} title="Input Pre-Hook & Output Post-Hook active">
-            <ShieldCheck size={13} />
-            <span>Llama Guard 4 • 12B</span>
-          </div>
-
-          {/* Fast API docs link */}
-          <a
-            href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-ghost"
-            style={{ padding: '6px 8px', fontSize: '0.75rem' }}
-            title="Open Swagger API Docs"
-          >
-            <span>Docs</span>
-            <ExternalLink size={12} />
-          </a>
-        </div>
       </div>
     </header>
   );

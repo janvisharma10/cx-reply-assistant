@@ -12,6 +12,7 @@ import {
   Sparkles,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   AlertTriangle,
   CheckCircle2,
   Trash2,
@@ -30,6 +31,7 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
   const [inputQuery, setInputQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
+  const [showAgentCards, setShowAgentCards] = useState(true);
   const [expandedDetails, setExpandedDetails] = useState({}); // { [msgIndex]: { reasoning: bool, tools: bool } }
   const [liveTelemetry, setLiveTelemetry] = useState({
     status: 'idle',
@@ -37,6 +39,7 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
     activeTool: null,
     events: []
   });
+  const [mobileAgentDrawer, setMobileAgentDrawer] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -201,200 +204,242 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
 
   return (
     <div style={{
-      maxWidth: '1440px',
-      margin: '0 auto',
-      padding: '24px',
-      display: 'grid',
-      gridTemplateColumns: '320px 1fr',
-      gap: '20px',
-      height: 'calc(100vh - 66px)'
+      display: 'flex',
+      flexDirection: 'column',
+      height: 'calc(100vh - 52px)',
+      overflow: 'hidden',
+      background: '#ffffff'
     }}>
-      {/* ── Left Sidebar: Agent Selection & Info ── */}
-      <div className="glass-card" style={{
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '18px',
-        gap: '14px',
-        height: '100%',
-        overflow: 'hidden',
+      {/* ── Top Header & Agent Cards Strip (KenzAI OS Style) ── */}
+      <div style={{
+        padding: '14px 20px 10px',
+        borderBottom: '1px solid #e5e7eb',
         background: '#ffffff',
-        border: '1px solid var(--border-subtle)'
+        flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Bot size={16} color="#000000" />
-            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#09090b' }}>Active Agents</h2>
-          </div>
-          <button 
-            onClick={onRefreshAgents} 
-            className="btn btn-ghost" 
-            style={{ padding: '4px 6px' }} 
-            title="Refresh agents"
-          >
-            <RefreshCw size={13} />
-          </button>
-        </div>
-
-        {/* Agent List */}
         <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          paddingRight: '4px'
-        }}>
-          {agents.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '24px 12px',
-              color: 'var(--text-muted)',
-              fontSize: '0.8rem'
-            }}>
-              No agents created yet. Create one in the <strong>Agent Studio</strong> tab!
-            </div>
-          ) : (
-            agents.map((ag) => {
-              const isSelected = selectedAgent?.id === ag.id;
-              return (
-                <div
-                  key={ag.id}
-                  onClick={() => setSelectedAgent(ag)}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    background: isSelected ? '#f8fafc' : '#ffffff',
-                    border: `1px solid ${isSelected ? '#000000' : 'var(--border-subtle)'}`,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    boxShadow: isSelected ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#09090b' }}>
-                      {ag.name}
-                    </span>
-                    {isSelected && (
-                      <span className="badge badge-monochrome" style={{ fontSize: '0.62rem', padding: '1px 6px' }}>Active</span>
-                    )}
-                  </div>
-                  <p style={{
-                    fontSize: '0.72rem',
-                    color: 'var(--text-secondary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    marginBottom: '8px'
-                  }}>
-                    {ag.description || 'Specialized CX Agent'}
-                  </p>
-                  
-                  {/* Bound Suite & KBs */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.62rem', padding: '1px 6px' }}>
-                        <ShieldCheck size={10} color="#000000" />
-                        {ag.guardrail_suite?.name || 'Standard CX Protection'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.62rem', padding: '1px 6px' }}>
-                        <Database size={9} />
-                        {ag.bound_kbs?.length || 0} Bound KBs
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Guardrail Controls Card */}
-        <div style={{
-          padding: '14px',
-          background: '#f8fafc',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-md)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldCheck size={16} color="#000000" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#09090b' }}>Llama Guard 4</span>
-            </div>
-            <button
-              onClick={() => setGuardrailsEnabled(!guardrailsEnabled)}
-              className="btn btn-ghost"
-              style={{ padding: '2px', color: guardrailsEnabled ? '#000000' : 'var(--text-muted)' }}
-              title="Toggle input pre-hook and output post-hook guardrails"
-            >
-              {guardrailsEnabled ? <ToggleRight size={24} color="#000000" /> : <ToggleLeft size={24} />}
-            </button>
-          </div>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            {guardrailsEnabled 
-              ? 'Active: Both Input Pre-Hook & Output Post-Hook are running on meta-llama/llama-guard-4-12b.' 
-              : 'Disabled: Bypassing safety guardrails (demonstration mode only).'}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Right: Chat Conversation Stream ── */}
-      <div className="glass-card" style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        overflow: 'hidden',
-        background: '#ffffff',
-        border: '1px solid var(--border-subtle)'
-      }}>
-        {/* Chat Stream Header */}
-        <div style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#fafafa'
+          marginBottom: showAgentCards && agents.length > 0 ? '10px' : '0'
         }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#09090b' }}>
-                {selectedAgent ? selectedAgent.name : 'Select an Agent'}
-              </h2>
-              {selectedAgent && (
-                <span className="badge badge-neutral" style={{ fontSize: '0.68rem', fontWeight: 600 }}>
-                  {selectedAgent.llm_name || 'google/gemini-3.5-flash-lite'}
-                </span>
-              )}
-              {selectedAgent && (
-                <span className="badge badge-safe" style={{ fontSize: '0.68rem', fontWeight: 600 }}>
-                  <ShieldCheck size={12} />
-                  Suite: {selectedAgent.guardrail_suite?.name || 'Standard CX Protection'}
-                </span>
-              )}
-            </div>
-            {selectedAgent && selectedAgent.bound_kbs && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Authorized KBs:</span>
-                {selectedAgent.bound_kbs.map(kb => (
-                  <span key={kb.id} className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>
-                    {kb.name}
-                  </span>
-                ))}
+            <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+              Playground
+            </h1>
+            <p style={{ fontSize: '0.76rem', color: '#6b7280', margin: '2px 0 0' }}>
+              Select an agent to chat with, or inspect deliberate reasoning and Llama Guard 4 guardrails.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={onRefreshAgents}
+              className="btn btn-ghost"
+              style={{ padding: '5px 8px', fontSize: '0.75rem', gap: '5px', border: '1px solid #e5e7eb' }}
+              title="Refresh agents"
+            >
+              <RefreshCw size={12} />
+              <span className="desktop-only">Sync</span>
+            </button>
+
+            {agents.length > 0 && (
+              <button
+                onClick={() => setShowAgentCards(!showAgentCards)}
+                className="btn btn-ghost"
+                style={{ padding: '5px 8px', fontSize: '0.75rem', gap: '5px', border: '1px solid #e5e7eb' }}
+                title={showAgentCards ? 'Collapse agent cards' : 'Show agent cards'}
+              >
+                {showAgentCards ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                <span className="desktop-only">{showAgentCards ? 'Collapse' : 'Agents'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Agent Cards Strip */}
+        {showAgentCards && (
+          <div className="no-scrollbar" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '10px',
+            maxHeight: '160px',
+            overflowY: 'auto',
+            paddingTop: '2px',
+            paddingBottom: '2px'
+          }}>
+            {agents.length === 0 ? (
+              <div style={{
+                padding: '14px',
+                border: '1px dashed #e5e7eb',
+                borderRadius: '8px',
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: '0.78rem'
+              }}>
+                No agents created yet. Open the <strong>Studio</strong> tab to configure your first agent.
               </div>
+            ) : (
+              agents.map((ag) => {
+                const isSelected = selectedAgent?.id === ag.id;
+                return (
+                  <div
+                    key={ag.id}
+                    onClick={() => setSelectedAgent(ag)}
+                    className={`kenzai-card ${isSelected ? 'active-card' : ''}`}
+                    style={{
+                      cursor: 'pointer',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '7px',
+                          background: '#000000',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <Bot size={15} />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            color: '#111827',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {ag.name}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>
+                            {ag.llm_name || 'Agno Agent'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isSelected ? '#f59e0b' : '#f3f4f6',
+                        color: isSelected ? '#ffffff' : '#9ca3af',
+                        flexShrink: 0
+                      }}>
+                        <ChevronRight size={13} />
+                      </div>
+                    </div>
+
+                    <p style={{
+                      fontSize: '0.72rem',
+                      color: '#4b5563',
+                      margin: 0,
+                      lineHeight: 1.35,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {ag.description || 'Specialized CX reply assistant.'}
+                    </p>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: 'auto' }}>
+                      <span className="kenzai-tag">[ MEMORY ]</span>
+                      <span className="kenzai-tag">[ KNOWLEDGE: {ag.bound_kbs?.length || 0} ]</span>
+                      <span className="kenzai-tag" style={{ color: '#047857', background: '#ecfdf5' }}>[ GUARDRAILS ]</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Chat Conversation Stream Container ── */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        background: '#fafafa',
+        position: 'relative'
+      }}>
+        {/* Chat Stream Header */}
+        <div style={{
+          padding: '10px 20px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: '#ffffff',
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
+            <span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#111827' }}>
+              {selectedAgent ? selectedAgent.name : 'Select an Agent'}
+            </span>
+            {selectedAgent && (
+              <span className="badge badge-neutral desktop-only" style={{ fontSize: '0.65rem' }}>
+                {selectedAgent.llm_name || 'Agno Agent'}
+              </span>
+            )}
+            {selectedAgent && (
+              <span className="badge badge-safe desktop-only" style={{ fontSize: '0.65rem' }}>
+                <ShieldCheck size={11} />
+                Suite: {selectedAgent.guardrail_suite?.name || 'Standard CX Protection'}
+              </span>
+            )}
+            {selectedAgent?.bound_kbs?.length > 0 && (
+              <span className="badge badge-neutral desktop-only" style={{ fontSize: '0.65rem' }}>
+                <Database size={10} />
+                {selectedAgent.bound_kbs.length} KBs Authorized
+              </span>
             )}
           </div>
 
-          <button
-            onClick={() => setMessages([])}
-            className="btn btn-ghost"
-            style={{ padding: '5px 10px', fontSize: '0.75rem' }}
-            title="Clear conversation stream"
-          >
-            <Trash2 size={13} />
-            Clear
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            {/* Llama Guard 4 Toggle Switch */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#6b7280' }} className="desktop-only">
+                Llama Guard 4:
+              </span>
+              <button
+                onClick={() => setGuardrailsEnabled(!guardrailsEnabled)}
+                className="btn btn-ghost"
+                style={{ padding: '3px 6px', gap: '4px', fontSize: '0.72rem' }}
+                title="Toggle safety guardrails"
+              >
+                {guardrailsEnabled ? <ToggleRight size={20} color="#000000" /> : <ToggleLeft size={20} color="#9ca3af" />}
+                <span className="desktop-only" style={{ fontWeight: 600, color: guardrailsEnabled ? '#047857' : '#9ca3af' }}>
+                  {guardrailsEnabled ? 'Active' : 'Off'}
+                </span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setMessages([])}
+              className="btn btn-ghost"
+              style={{ padding: '5px 8px', fontSize: '0.75rem', gap: '4px', border: '1px solid #e5e7eb' }}
+              title="Clear conversation"
+            >
+              <Trash2 size={13} />
+              <span className="desktop-only">Clear</span>
+            </button>
+          </div>
         </div>
 
         {/* Message Stream */}
@@ -679,7 +724,8 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
                 <Bot size={20} color="#ffffff" />
               </div>
               <div style={{
-                minWidth: '360px',
+                minWidth: 'min(100%, 300px)',
+                width: '100%',
                 maxWidth: '650px',
                 borderRadius: 'var(--radius-lg)',
                 background: '#ffffff',
@@ -795,20 +841,21 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
 
         {/* Prompt Suggestions & Input Bar */}
         <div style={{
-          padding: '14px 20px',
+          padding: '12px 16px',
           borderTop: '1px solid var(--border-subtle)',
           background: '#ffffff'
         }}>
           {/* Suggestion Chips */}
-          <div style={{
+          <div className="no-scrollbar" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             marginBottom: '10px',
             overflowX: 'auto',
-            paddingBottom: '2px'
+            paddingBottom: '2px',
+            whiteSpace: 'nowrap'
           }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Test Queries:
             </span>
             {samplePrompts.map((p, idx) => (
@@ -816,7 +863,7 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
                 key={idx}
                 onClick={() => handleSend(p.query)}
                 className={`badge ${p.type === 'safe' ? 'badge-neutral' : 'badge-danger'}`}
-                style={{ cursor: 'pointer', padding: '4px 9px', fontSize: '0.72rem' }}
+                style={{ cursor: 'pointer', padding: '4px 9px', fontSize: '0.72rem', flexShrink: 0 }}
                 title={p.query}
               >
                 {p.type === 'unsafe' ? <AlertTriangle size={11} /> : <CheckCircle2 size={11} />}
@@ -831,7 +878,7 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
               e.preventDefault();
               handleSend();
             }}
-            style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+            style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
           >
             <input
               type="text"
@@ -842,23 +889,108 @@ export default function ChatWorkspace({ agents, selectedAgent, setSelectedAgent,
               className="form-input"
               style={{
                 fontSize: '0.875rem',
-                padding: '11px 16px',
+                padding: '10px 14px',
                 background: '#ffffff',
-                border: '1px solid #cbd5e1'
+                border: '1px solid #cbd5e1',
+                flex: 1
               }}
             />
             <button
               type="submit"
               disabled={!inputQuery.trim() || !selectedAgent || loading}
               className="btn btn-primary"
-              style={{ height: '44px', padding: '0 18px' }}
+              style={{ height: '42px', padding: '0 16px', flexShrink: 0 }}
             >
               <Send size={15} />
-              <span>Send</span>
+              <span className="desktop-only">Send</span>
             </button>
           </form>
         </div>
       </div>
+
+      {/* Mobile Agent Selection Drawer Modal */}
+      {mobileAgentDrawer && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 99,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center'
+        }} onClick={() => setMobileAgentDrawer(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              background: '#ffffff',
+              borderTopLeftRadius: '16px',
+              borderTopRightRadius: '16px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.15)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Bot size={18} />
+                <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Select Active Agent</h3>
+              </div>
+              <button
+                onClick={() => setMobileAgentDrawer(false)}
+                className="btn btn-ghost"
+                style={{ padding: '4px 8px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '55vh' }}>
+              {agents.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  No agents created yet. Create one in Agent Studio!
+                </div>
+              ) : (
+                agents.map((ag) => {
+                  const isSelected = selectedAgent?.id === ag.id;
+                  return (
+                    <div
+                      key={ag.id}
+                      onClick={() => {
+                        setSelectedAgent(ag);
+                        setMobileAgentDrawer(false);
+                      }}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        background: isSelected ? '#f8fafc' : '#ffffff',
+                        border: `1px solid ${isSelected ? '#000000' : 'var(--border-subtle)'}`,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{ag.name}</span>
+                        {isSelected && <span className="badge badge-monochrome" style={{ fontSize: '0.62rem' }}>Active</span>}
+                      </div>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {ag.description || 'Specialized CX Agent'}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

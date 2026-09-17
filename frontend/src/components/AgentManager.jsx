@@ -79,21 +79,21 @@ export default function AgentManager({ agents, kbs, onAgentsUpdated, onSelectAge
   };
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '24px' }}>
+    <div className="page-container">
       {/* ── Top Header Bar ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '24px',
+        marginBottom: '20px',
         flexWrap: 'wrap',
-        gap: '16px'
+        gap: '12px'
       }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             Agent Studio
           </h2>
-          <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Configure and deploy AI Agents with Agno ReasoningTools, bound Knowledge Bases, and custom Guardrail Suites.
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function AgentManager({ agents, kbs, onAgentsUpdated, onSelectAge
         <button
           onClick={() => setShowCreateModal(true)}
           className="btn btn-primary"
-          style={{ padding: '9px 18px', fontSize: '0.8125rem' }}
+          style={{ padding: '8px 16px', fontSize: '0.8125rem' }}
         >
           <Plus size={16} />
           <span>Register New Agent</span>
@@ -109,11 +109,7 @@ export default function AgentManager({ agents, kbs, onAgentsUpdated, onSelectAge
       </div>
 
       {/* ── Agents Grid ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-        gap: '20px'
-      }}>
+      <div className="responsive-card-grid">
         {agents.map((ag) => (
           <div
             key={ag.id}
@@ -276,12 +272,12 @@ export default function AgentManager({ agents, kbs, onAgentsUpdated, onSelectAge
           justifyContent: 'center',
           zIndex: 100
         }}>
-          <div className="glass-card" style={{
+          <div className="glass-card modal-dialog" style={{
             width: '620px',
-            maxWidth: '92vw',
+            maxWidth: '94vw',
             maxHeight: '92vh',
             overflowY: 'auto',
-            padding: '28px',
+            padding: '22px',
             background: '#ffffff',
             border: '1px solid var(--border-strong)',
             boxShadow: 'var(--shadow-lg)',
