@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatWorkspace from './components/ChatWorkspace';
 import KnowledgeBaseManager from './components/KnowledgeBaseManager';
 import AgentManager from './components/AgentManager';
 import GuardrailsLab from './components/GuardrailsLab';
+import CommandPalette from './components/CommandPalette';
 import { fetchHealth, fetchRootMeta, listAgents, listKnowledgeBases } from './services/api';
 import { Menu, ExternalLink, RefreshCw } from 'lucide-react';
 
@@ -19,7 +20,7 @@ async function sendPingBurst() {
       fetch(url, { mode: 'no-cors' }).catch(() => {});
     }
     if (i < 10) {
-      await new Promise((r) => setTimeout(r, 1000)); // 1s spacing between pings in burst
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 }
@@ -32,8 +33,11 @@ export default function App() {
   const [healthStatus, setHealthStatus] = useState('online');
   const [systemMeta, setSystemMeta] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
+    setIsSyncing(true);
     try {
       const [health, meta, agentsData, kbsData] = await Promise.allSettled([
         fetchHealth(),
@@ -52,25 +56,31 @@ export default function App() {
         setSystemMeta(meta.value);
       }
 
-      if (agentsData.status === 'fulfilled') {
+      if (agentsData.status === 'fulfilled' && Array.isArray(agentsData.value)) {
         setAgents(agentsData.value);
-        if (agentsData.value.length > 0 && !selectedAgent) {
-          setSelectedAgent(agentsData.value[0]);
+        if (agentsData.value.length > 0) {
+          setSelectedAgent((prev) => {
+            if (!prev) return agentsData.value[0];
+            const match = agentsData.value.find((a) => a.id === prev.id);
+            return match || agentsData.value[0];
+          });
         }
       }
 
-      if (kbsData.status === 'fulfilled') {
+      if (kbsData.status === 'fulfilled' && Array.isArray(kbsData.value)) {
         setKbs(kbsData.value);
       }
     } catch (err) {
       console.error('Error loading initial app data:', err);
+    } finally {
+      setIsSyncing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadAllData();
 
-    // Burst of 10 pings every 5 minutes (300,000ms)
+    // Burst of 10 pings every 5 minutes
     sendPingBurst();
     const pingInterval = setInterval(() => {
       sendPingBurst();
@@ -88,24 +98,49 @@ export default function App() {
           });
         })
         .catch(() => setHealthStatus('online'));
-    }, 5000);
+    }, 10000);
 
     return () => {
       clearInterval(pingInterval);
       clearInterval(healthInterval);
     };
+  }, [loadAllData]);
+
+  // Global ⌘K / Ctrl+K keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const tabTitles = {
     chat: 'Playground',
-    agents: 'Studio',
-    kb: 'Knowledge',
+    agents: 'Agent Studio',
+    kb: 'Knowledge Bases',
     guardrails: 'Safety Lab'
   };
 
   return (
     <div className="kenzai-shell">
-      {/* KenzAI Persistent Left Sidebar */}
+      {/* ⌘K Command Palette Modal */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        agents={agents}
+        selectedAgent={selectedAgent}
+        setSelectedAgent={setSelectedAgent}
+        kbs={kbs}
+        onSync={loadAllData}
+      />
+
+      {/* Persistent Left Sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -113,7 +148,6 @@ export default function App() {
         setSidebarOpen={setSidebarOpen}
         agentsCount={agents.length}
         kbsCount={kbs.length}
-        healthStatus={healthStatus}
       />
 
       {/* Main Workspace Area */}
@@ -124,63 +158,28 @@ export default function App() {
             <button
               onClick={() => setSidebarOpen(true)}
               className="mobile-only btn btn-ghost"
-              style={{ padding: '6px', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+              style={{ padding: '6px', border: '1px solid var(--border-subtle)', borderRadius: '6px' }}
               title="Open Navigation"
             >
               <Menu size={18} />
             </button>
             <div className="kenzai-breadcrumb">
-              <span>OS</span>
-              <span>/</span>
-              <span>CX Agent Studio</span>
-              <span>/</span>
               <strong>{tabTitles[activeTab]}</strong>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              onClick={loadAllData}
-              className="btn btn-ghost"
-              style={{ padding: '6px 10px', fontSize: '0.75rem', gap: '6px' }}
-              title="Refresh system state"
-            >
-              <RefreshCw size={13} />
-              <span className="desktop-only">Sync</span>
-            </button>
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* API Docs */}
             <a
               href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
               target="_blank"
               rel="noreferrer"
-              className="btn btn-secondary"
-              style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+              className="btn btn-secondary desktop-only"
+              style={{ padding: '5px 12px', fontSize: '0.75rem', gap: '6px' }}
             >
               <span>API Docs</span>
               <ExternalLink size={13} />
             </a>
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 8px',
-              background: '#f8fafc',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              fontSize: '0.75rem'
-            }}>
-              <span style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                boxShadow: '0 0 6px #10b981'
-              }} />
-              <span className="desktop-only" style={{ fontWeight: 600, color: '#334155' }}>
-                System Online
-              </span>
-            </div>
           </div>
         </header>
 
@@ -198,6 +197,7 @@ export default function App() {
               selectedAgent={selectedAgent}
               setSelectedAgent={setSelectedAgent}
               onRefreshAgents={loadAllData}
+              onNavigateToStudio={() => setActiveTab('agents')}
             />
           )}
 
@@ -227,4 +227,3 @@ export default function App() {
     </div>
   );
 }
-

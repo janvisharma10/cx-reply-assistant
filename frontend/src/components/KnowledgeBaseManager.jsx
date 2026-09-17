@@ -15,7 +15,10 @@ import {
   ChevronRight,
   Zap,
   Layers,
-  ArrowRight
+  ArrowRight,
+  X,
+  FileCode,
+  Check
 } from 'lucide-react';
 import {
   listKnowledgeBases,
@@ -26,6 +29,30 @@ import {
   deleteDocumentFromKB,
   queryKnowledgeBase
 } from '../services/api';
+
+const CHUNKING_PRESETS = [
+  {
+    name: 'Balanced CX (Recommended)',
+    type: 'sentence',
+    size: 600,
+    overlap: 100,
+    description: 'Optimal for customer service FAQs, return policies, and manuals.'
+  },
+  {
+    name: 'Compact & Fast',
+    type: 'sentence',
+    size: 300,
+    overlap: 50,
+    description: 'High-precision retrieval for concise factual queries and lookup tables.'
+  },
+  {
+    name: 'Deep Context RAG',
+    type: 'token',
+    size: 1000,
+    overlap: 200,
+    description: 'Long-form context preservation for complex technical documentation.'
+  }
+];
 
 export default function KnowledgeBaseManager({ onKBsUpdated }) {
   const [kbs, setKbs] = useState([]);
@@ -142,7 +169,7 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
     try {
       const res = await uploadDocumentToKB(selectedKb.id, uploadFile);
       const chunksCount = res.chunk_count ?? res.chunks_count ?? 0;
-      setUploadSuccess(`Ingested "${uploadFile.name}" successfully! ${chunksCount} chunks created and embedded.`);
+      setUploadSuccess(`Ingested "${uploadFile.name}" successfully! ${chunksCount} vector chunks generated.`);
       setUploadFile(null);
       await loadKBs(selectedKb.id);
       await loadDocuments(selectedKb.id);
@@ -179,6 +206,12 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
     }
   };
 
+  const applyPreset = (preset) => {
+    setChunkType(preset.type);
+    setChunkSize(preset.size);
+    setChunkOverlap(preset.overlap);
+  };
+
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
       {/* ── Top Header Bar ── */}
@@ -191,25 +224,20 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
         gap: '12px'
       }}>
         <div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-            Knowledge Studio
-          </h1>
-          <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '3px 0 0' }}>
-            Vector-indexed enterprise knowledge bases with ChromaDB embeddings and Agno semantic retrieval tools.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#09090b', letterSpacing: '-0.02em', margin: 0 }}>
+              Knowledge Studio
+            </h1>
+            <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+              {kbs.length} Stores
+            </span>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+            Manage vector stores with ChromaDB embeddings, document ingestion, and semantic retrieval tools.
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => loadKBs()}
-            className="btn btn-ghost"
-            style={{ padding: '7px 12px', fontSize: '0.8rem', gap: '6px', border: '1px solid #e5e7eb' }}
-            title="Refresh Knowledge Bases"
-          >
-            <RefreshCw size={13} className={loading ? 'animate-spin-slow' : ''} />
-            <span>Sync</span>
-          </button>
-
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary"
@@ -227,8 +255,8 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
           padding: '48px 24px',
           textAlign: 'center',
           background: '#ffffff',
-          borderRadius: '14px',
-          border: '1px dashed #e5e7eb',
+          borderRadius: '16px',
+          border: '1px dashed #cbd5e1',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -236,8 +264,8 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
           gap: '12px'
         }}>
           <div style={{
-            width: '46px',
-            height: '46px',
+            width: '48px',
+            height: '48px',
             borderRadius: '12px',
             background: '#000000',
             color: '#ffffff',
@@ -245,13 +273,13 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Database size={22} />
+            <Database size={24} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#111827', margin: 0 }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
               No Knowledge Bases Found
             </h3>
-            <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '4px 0 0', maxWidth: '420px' }}>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0', maxWidth: '420px' }}>
               Create a Knowledge Base to upload enterprise documents (PDF, TXT, DOCX), generate vector embeddings, and empower agents with RAG factual retrieval.
             </p>
           </div>
@@ -268,20 +296,20 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
 
       {/* ── Active Knowledge Bases Cards Grid ── */}
       {kbs.length > 0 && (
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Active Knowledge Bases ({kbs.length})
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Knowledge Stores ({kbs.length})
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-              Click any card to inspect and upload documents
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+              Click any store to inspect, upload, and test semantic search
             </span>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '12px'
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: '10px'
           }}>
             {kbs.map((kb) => {
               const isSelected = selectedKb?.id === kb.id;
@@ -298,81 +326,64 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
                   className={`kenzai-card ${isSelected ? 'active-card' : ''}`}
                   style={{
                     cursor: 'pointer',
-                    padding: '16px',
+                    padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px'
+                    gap: '6px',
+                    background: isSelected ? '#ffffff' : '#f8fafc'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                       <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
-                        background: '#000000',
-                        color: '#ffffff',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        background: isSelected ? '#000000' : '#e2e8f0',
+                        color: isSelected ? '#ffffff' : '#475569',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0
                       }}>
-                        <Database size={16} />
+                        <Database size={15} />
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{
-                          fontWeight: 700,
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#09090b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {kb.name}
                         </div>
-                        <div style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
-                          {kb.id}
+                        <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                          {docCount} Document{docCount === 1 ? '' : 's'}
                         </div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteKB(kb.id);
-                      }}
-                      className="btn btn-ghost"
-                      style={{ padding: '4px', color: '#9ca3af' }}
-                      title="Delete Knowledge Base"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isSelected ? '#000000' : '#e2e8f0',
+                      color: isSelected ? '#ffffff' : '#94a3b8',
+                      flexShrink: 0
+                    }}>
+                      <ChevronRight size={12} />
+                    </div>
                   </div>
 
                   <p style={{
-                    fontSize: '0.75rem',
-                    color: '#4b5563',
+                    fontSize: '0.72rem',
+                    color: '#475569',
                     margin: 0,
-                    lineHeight: 1.4,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
                   }}>
-                    {kb.description || 'No description provided.'}
+                    {kb.description || 'No description provided'}
                   </p>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: 'auto', paddingTop: '6px', borderTop: '1px solid #f3f4f6' }}>
-                    <span className="kenzai-tag">
-                      [ DOCS: {docCount} ]
-                    </span>
-                    <span className="kenzai-tag">
-                      [ {kb.chunking_config?.chunking_type || 'sentence'}: {kb.chunking_config?.chunk_size || 600} ]
-                    </span>
-                    <span className="kenzai-tag" style={{ color: '#047857', background: '#ecfdf5' }}>
-                      [ VECTOR READY ]
-                    </span>
-                  </div>
                 </div>
               );
             })}
@@ -380,26 +391,166 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
         </div>
       )}
 
-      {/* ── Selected Knowledge Base Management Workspace ── */}
+      {/* ── Selected Knowledge Base Inspector & Ingestion Studio ── */}
       {selectedKb && (
         <div style={{
-          background: '#ffffff',
-          borderRadius: '14px',
-          border: '1px solid #e5e7eb',
-          overflow: 'hidden',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          alignItems: 'start'
         }}>
-          {/* Header of Active KB */}
-          <div style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #e5e7eb',
-            background: '#fafafa',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '12px'
-          }}>
+          {/* LEFT: Documents & Ingestion Zone */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: '#000000',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <FolderOpen size={16} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
+                    {selectedKb.name}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: '#64748b' }}>
+                    <span>Chunk Size: <strong>{selectedKb.chunking_config?.chunk_size || 600}</strong></span>
+                    <span>•</span>
+                    <span>Overlap: <strong>{selectedKb.chunking_config?.chunk_overlap || 100}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleDeleteKB(selectedKb.id)}
+                className="btn btn-ghost"
+                style={{ padding: '5px', color: '#94a3b8' }}
+                title="Delete this Knowledge Base"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+
+            {/* Ingestion Upload Box */}
+            <form onSubmit={handleUploadDocument} style={{
+              border: '2px dashed #cbd5e1',
+              borderRadius: '12px',
+              padding: '16px',
+              background: '#fafafa',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              textAlign: 'center'
+            }}>
+              <Upload size={24} color="#64748b" />
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                  Upload Enterprise Document
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                  Supports PDF, TXT, DOCX, MD, and JSON files
+                </div>
+              </div>
+
+              <input
+                type="file"
+                accept=".pdf,.txt,.docx,.md,.json"
+                onChange={(e) => {
+                  setUploadFile(e.target.files[0]);
+                  setUploadSuccess('');
+                  setUploadError('');
+                }}
+                style={{ fontSize: '0.78rem', color: '#475569' }}
+              />
+
+              <button
+                type="submit"
+                disabled={!uploadFile || uploading}
+                className="btn btn-primary"
+                style={{ padding: '6px 14px', fontSize: '0.78rem', gap: '5px' }}
+              >
+                {uploading ? <RefreshCw size={13} className="animate-spin-slow" /> : <Upload size={13} />}
+                <span>{uploading ? 'Embedding & Indexing...' : 'Ingest Document'}</span>
+              </button>
+
+              {uploadSuccess && (
+                <div style={{ fontSize: '0.75rem', color: '#047857', background: '#ecfdf5', padding: '6px 10px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                  {uploadSuccess}
+                </div>
+              )}
+
+              {uploadError && (
+                <div style={{ fontSize: '0.75rem', color: '#b91c1c', background: '#fef2f2', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                  {uploadError}
+                </div>
+              )}
+            </form>
+
+            {/* Ingested Documents List */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Indexed Documents ({documents.length})
+                </span>
+                {loadingDocs && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Loading docs...</span>}
+              </div>
+
+              {documents.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.78rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  No documents ingested yet. Upload a document above to create vector embeddings.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px', overflowY: 'auto' }}>
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <FileText size={15} color="#475569" />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {doc.filename || doc.name}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                            {doc.chunk_count ?? doc.chunks_count ?? 0} Chunks • {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : 'Vector Indexed'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteDocument(doc.id, doc.filename || doc.name)}
+                        className="btn btn-ghost"
+                        style={{ padding: '4px', color: '#94a3b8' }}
+                        title="Delete document"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Semantic Search Sandbox */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
                 width: '32px',
@@ -411,288 +562,108 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Layers size={16} />
+                <Search size={16} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#111827' }}>
-                  {selectedKb.name} Workspace
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>
-                  Chunk strategy: <strong>{selectedKb.chunking_config?.chunking_type || 'sentence'}</strong> ({selectedKb.chunking_config?.chunk_size || 600} tokens, {selectedKb.chunking_config?.chunk_overlap || 100} overlap)
-                </div>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
+                  Semantic Search Sandbox
+                </h3>
+                <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0 }}>
+                  Test vector similarity lookup and chunk relevance directly against this store.
+                </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
-                <FileText size={11} />
-                {documents.length} Ingested Document{documents.length === 1 ? '' : 's'}
-              </span>
-              <span className="badge badge-safe" style={{ fontSize: '0.72rem' }}>
-                ChromaDB Vector Store
-              </span>
-            </div>
-          </div>
+            <form onSubmit={handleSemanticSearch} style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Ask a question or enter keywords to retrieve relevant chunks..."
+                className="form-input"
+                style={{ fontSize: '0.82rem' }}
+              />
+              <button
+                type="submit"
+                disabled={!searchQuery.trim() || searching}
+                className="btn btn-primary"
+                style={{ padding: '8px 14px', fontSize: '0.8rem', gap: '5px' }}
+              >
+                {searching ? <RefreshCw size={14} className="animate-spin-slow" /> : <Search size={14} />}
+                <span>Query</span>
+              </button>
+            </form>
 
-          {/* Master Detail 2-Column Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))',
-            gap: '20px',
-            padding: '20px'
-          }}>
-            {/* ── Left Column: Documents & Ingestion ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* File Upload Card */}
-              <div style={{
-                padding: '16px',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb',
-                background: '#ffffff'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <Upload size={16} color="#000000" />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>
-                    Upload & Ingest Documents
-                  </span>
-                </div>
-
-                <form onSubmit={handleUploadDocument} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{
-                    border: '1px dashed #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '18px 14px',
-                    textAlign: 'center',
-                    background: '#f8fafc',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s ease'
-                  }}>
-                    <input
-                      type="file"
-                      accept=".pdf,.txt,.md,.docx"
-                      onChange={(e) => setUploadFile(e.target.files[0])}
-                      id="kb-file-upload-input"
-                      style={{ display: 'none' }}
-                    />
-                    <label htmlFor="kb-file-upload-input" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                      <FolderOpen size={24} color="#374151" />
-                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#111827' }}>
-                        {uploadFile ? uploadFile.name : 'Select or drop enterprise PDF / TXT / MD'}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>
-                        Automatic sentence chunking, vector embedding, and ChromaDB storage
-                      </span>
-                    </label>
-                  </div>
-
-                  {uploadSuccess && (
-                    <div className="badge badge-safe" style={{ padding: '6px 10px', fontSize: '0.72rem' }}>
-                      <CheckCircle size={12} />
-                      <span>{uploadSuccess}</span>
-                    </div>
-                  )}
-
-                  {uploadError && (
-                    <div className="badge badge-danger" style={{ padding: '6px 10px', fontSize: '0.72rem' }}>
-                      <AlertCircle size={12} />
-                      <span>{uploadError}</span>
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      type="submit"
-                      disabled={!uploadFile || uploading}
-                      className="btn btn-primary"
-                      style={{ padding: '7px 16px', fontSize: '0.78rem', gap: '6px' }}
-                    >
-                      {uploading ? <RefreshCw size={13} className="animate-spin-slow" /> : <Upload size={13} />}
-                      <span>{uploading ? 'Chunking & Embedding...' : 'Ingest Document'}</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Indexed Documents Table */}
-              <div style={{
-                padding: '16px',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb',
-                background: '#ffffff',
-                flex: 1
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileText size={16} color="#000000" />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>
-                      Indexed Documents ({documents.length})
-                    </span>
-                  </div>
-                  {loadingDocs && <RefreshCw size={13} className="animate-spin-slow" color="#9ca3af" />}
-                </div>
-
-                {documents.length === 0 ? (
-                  <div style={{
-                    padding: '24px 16px',
-                    textAlign: 'center',
-                    color: '#9ca3af',
-                    fontSize: '0.78rem',
-                    background: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px dashed #e2e8f0'
-                  }}>
-                    No documents indexed yet. Upload a policy PDF above to extract chunks.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
-                    {documents.map((doc) => (
-                      <div
-                        key={doc.document_id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 12px',
-                          background: '#f8fafc',
-                          borderRadius: '6px',
-                          border: '1px solid #e5e7eb'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                          <div style={{
-                            width: '26px',
-                            height: '26px',
-                            borderRadius: '5px',
-                            background: '#000000',
-                            color: '#ffffff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <FileText size={13} />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {doc.filename}
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>
-                              {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Ingested'}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                          <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>
-                            {doc.chunk_count || 1} chunks
-                          </span>
-                          <button
-                            onClick={() => handleDeleteDocument(doc.document_id, doc.filename)}
-                            className="btn btn-ghost"
-                            style={{ padding: '4px', color: '#9ca3af' }}
-                            title="Delete document"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ── Right Column: Semantic Vector Query Inspector ── */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              padding: '16px',
-              borderRadius: '10px',
-              border: '1px solid #e5e7eb',
-              background: '#ffffff'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Search size={16} color="#000000" />
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>
-                  Semantic Retrieval Inspector
+            {/* Results Display */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Retrieved Chunks ({searchResults.length})
                 </span>
+                {searching && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Vector lookup in progress...</span>}
               </div>
-              <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0, lineHeight: 1.4 }}>
-                Directly query this vector database to verify chunk relevance and similarity score embeddings before connecting to agents.
-              </p>
 
-              {/* Search Form */}
-              <form onSubmit={handleSemanticSearch} style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter a test question or keyword..."
-                  className="form-input"
-                  style={{ flex: 1, fontSize: '0.82rem', padding: '8px 12px', border: '1px solid #cbd5e1' }}
-                />
-                <button
-                  type="submit"
-                  disabled={!searchQuery.trim() || searching}
-                  className="btn btn-secondary"
-                  style={{ padding: '8px 14px', fontSize: '0.78rem', gap: '5px' }}
-                >
-                  {searching ? <RefreshCw size={13} className="animate-spin-slow" /> : <Search size={13} />}
-                  <span>Search</span>
-                </button>
-              </form>
+              {searchResults.length === 0 ? (
+                <div style={{
+                  padding: '36px 20px',
+                  textAlign: 'center',
+                  background: '#f8fafc',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  color: '#94a3b8',
+                  fontSize: '0.8rem'
+                }}>
+                  Enter a test query above to inspect similarity matching and vector chunk content.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto' }}>
+                  {searchResults.map((res, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '10px 12px',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="badge badge-monochrome" style={{ fontSize: '0.62rem' }}>
+                            Rank #{i + 1}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155' }}>
+                            {res.filename || 'Document'}
+                          </span>
+                        </div>
+                        {res.score !== undefined && (
+                          <span className="badge badge-safe" style={{ fontSize: '0.62rem' }}>
+                            Score: {(res.score * 100).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
 
-              {/* Results List */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                flex: 1,
-                maxHeight: '340px',
-                overflowY: 'auto'
-              }}>
-                {searchResults.map((r, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '10px 12px',
-                      background: '#f8fafc',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                      <span className="badge badge-monochrome" style={{ fontSize: '0.65rem' }}>
-                        Chunk {idx + 1} • Score: {typeof r.score === 'number' ? r.score.toFixed(3) : r.score || 'Match'}
-                      </span>
-                      <span style={{ fontSize: '0.68rem', color: '#9ca3af' }}>
-                        Source: {r.filename}
-                      </span>
+                      <div style={{
+                        color: '#1e293b',
+                        lineHeight: 1.45,
+                        background: '#ffffff',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        fontFamily: 'var(--font-sans)',
+                        maxHeight: '120px',
+                        overflowY: 'auto'
+                      }}>
+                        {res.content || res.text || JSON.stringify(res)}
+                      </div>
                     </div>
-                    <p style={{
-                      margin: 0,
-                      color: '#334155',
-                      lineHeight: '1.45',
-                      fontFamily: 'var(--font-sans)',
-                      background: '#ffffff',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #f1f5f9',
-                      whiteSpace: 'pre-wrap'
-                    }}>
-                      {r.text}
-                    </p>
-                  </div>
-                ))}
-
-                {searchResults.length === 0 && !searching && searchQuery && (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', fontSize: '0.75rem' }}>
-                    No matching chunks returned for query.
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -700,107 +671,132 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
 
       {/* ── Create Knowledge Base Modal ── */}
       {showCreateModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100
-        }}>
-          <div className="glass-card modal-dialog" style={{
-            width: '520px',
-            maxWidth: '92vw',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            padding: '22px',
-            background: '#ffffff',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Database size={18} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#111827', margin: 0 }}>
-                  Create New Knowledge Base
-                </h3>
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div
+            className="modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '580px', maxWidth: '94vw', padding: '24px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: '#000000',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Database size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
+                    Create Knowledge Base
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
+                    Setup a vector store with custom chunking parameters.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="btn btn-ghost"
-                style={{ padding: '4px 8px' }}
+                style={{ padding: '4px', borderRadius: '6px' }}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateKB} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Presets */}
+            <div style={{ marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                ⚙️ Recommended Chunking Presets:
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '6px' }}>
+                {CHUNKING_PRESETS.map((p, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: `1px solid ${chunkSize === p.size ? '#000000' : '#e2e8f0'}`,
+                      background: chunkSize === p.size ? '#ffffff' : '#f8fafc',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#64748b' }}>{p.size} chars / {p.overlap} overlap</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateKB} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#111827', marginBottom: '5px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '5px' }}>
                   Knowledge Base Name *
                 </label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Return & Shipping Policies"
                   value={newKbName}
                   onChange={(e) => setNewKbName(e.target.value)}
-                  placeholder="e.g. Return & Warranty Policy"
                   className="form-input"
-                  style={{ background: '#ffffff', border: '1px solid #cbd5e1' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#111827', marginBottom: '5px' }}>
-                  Description (Used by Agent Reasoning Engine to decide routing) *
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '5px' }}>
+                  Description
                 </label>
-                <textarea
-                  rows={3}
-                  required
+                <input
+                  type="text"
+                  placeholder="e.g. Official company return policy and international shipping FAQs"
                   value={newKbDesc}
                   onChange={(e) => setNewKbDesc(e.target.value)}
-                  placeholder="30-day return policy, warranty terms, condition rules, and refund processing."
-                  className="form-textarea"
-                  style={{ background: '#ffffff', border: '1px solid #cbd5e1' }}
+                  className="form-input"
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#111827', marginBottom: '5px' }}>
-                    Chunk Size (Tokens)
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '5px' }}>
+                    Chunk Size ({chunkSize} characters)
                   </label>
                   <input
-                    type="number"
+                    type="range"
+                    min="100"
+                    max="2000"
+                    step="50"
                     value={chunkSize}
-                    onChange={(e) => setChunkSize(e.target.value)}
-                    className="form-input"
-                    style={{ background: '#ffffff', border: '1px solid #cbd5e1' }}
+                    onChange={(e) => setChunkSize(Number(e.target.value))}
+                    style={{ width: '100%' }}
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#111827', marginBottom: '5px' }}>
-                    Chunk Overlap (Tokens)
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '5px' }}>
+                    Chunk Overlap ({chunkOverlap} characters)
                   </label>
                   <input
-                    type="number"
+                    type="range"
+                    min="0"
+                    max="500"
+                    step="25"
                     value={chunkOverlap}
-                    onChange={(e) => setChunkOverlap(e.target.value)}
-                    className="form-input"
-                    style={{ background: '#ffffff', border: '1px solid #cbd5e1' }}
+                    onChange={(e) => setChunkOverlap(Number(e.target.value))}
+                    style={{ width: '100%' }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -811,10 +807,11 @@ export default function KnowledgeBaseManager({ onKBsUpdated }) {
                 </button>
                 <button
                   type="submit"
+                  disabled={!newKbName.trim()}
                   className="btn btn-primary"
                   style={{ padding: '8px 18px' }}
                 >
-                  Create Knowledge Base
+                  Create Knowledge Store
                 </button>
               </div>
             </form>
