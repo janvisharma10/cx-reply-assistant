@@ -4,7 +4,7 @@
 #  creating agents via the API.
 # ─────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY=
-OPENROUTER_BASE_URL=
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 DEFAULT_MODEL=
 
 # ─────────────────────────────────────────────────────────────
@@ -13,13 +13,7 @@ DEFAULT_MODEL=
 EMBEDDING_MODEL=
 
 # ─────────────────────────────────────────────────────────────
-#  Storage & Persistence
-# ─────────────────────────────────────────────────────────────
-UPLOAD_DIR=
-
-# ─────────────────────────────────────────────────────────────
 #  Guardrails Configuration (Llama Guard 4 via OpenRouter)
 # ─────────────────────────────────────────────────────────────
 LLAMA_GUARD_MODEL=
-LLAMA_GUARD_API_KEY=
 LLAMA_GUARD_BASE_URL=

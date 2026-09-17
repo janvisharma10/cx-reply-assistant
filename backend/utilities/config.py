@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     DATABASE_URL: ClassVar[str] = "sqlite:///./kb_database.db"
     # Hardcoded Chroma persist directory — not loaded from .env
     CHROMA_PERSIST_DIR: ClassVar[str] = "./chroma_data"
-    UPLOAD_DIR: str = "./uploads"
+    # Hardcoded upload directory — not loaded from .env
+    UPLOAD_DIR: ClassVar[str] = "./uploads"
 
     # Chunking configurations
     CHUNK_SIZE: int = 800
@@ -23,7 +24,8 @@ class Settings(BaseSettings):
 
     # Guardrails configuration (Llama Guard 4 via OpenRouter)
     LLAMA_GUARD_MODEL: str = "meta-llama/llama-guard-4-12b"
-    LLAMA_GUARD_API_KEY: str = ""
+    # Hardcoded to use OPENROUTER_API_KEY — not loaded from .env
+    LLAMA_GUARD_API_KEY: ClassVar[str] = ""
     LLAMA_GUARD_BASE_URL: str = ""
     # Hardcoded guardrails toggle — not loaded from .env
     ENABLE_GUARDRAILS: ClassVar[bool] = True

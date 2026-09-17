@@ -2,7 +2,7 @@
  * API client service for CX Reply Assistant Backend
  */
 
-const BASE_URL = ''; // Relative URL leverages Vite proxy (/api, /health)
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''; // In dev uses Vite proxy, in prod uses Render backend URL
 
 export async function fetchHealth() {
   const res = await fetch(`${BASE_URL}/health`);
