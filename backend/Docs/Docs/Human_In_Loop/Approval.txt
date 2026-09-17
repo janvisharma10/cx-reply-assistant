@@ -1,0 +1,77 @@
+Human-in-the-Loop
+Approval
+
+Copy page
+
+Admin-mediated HITL workflows with persistent records and audit trails.
+
+Approval enables a “User Triggers, Admin Authorizes” workflow. When an agent (or team member) hits a protected tool during a run, the run pauses and persists a pending record to your database. Execution only resumes once an admin approves or rejects the request.
+Approvals are built on HITL primitives (requires_confirmation, requires_user_input, or external_execution). Your tool must implement at least one. Bare @approval sets requires_confirmation=True automatically if none is set.
+Approvals work at both the agent and team level. When a member agent in a team calls an @approval tool, the team run pauses with the same flow shown below. See the Team approval example.
+​
+Quick start
+from agno.approval import approval
+from agno.tools import tool
+from agno.db.sqlite import SqliteDb
+from agno.agent import Agent
+
+@approval
+@tool(requires_confirmation=True)
+def delete_user_data(user_id: str) -> str:
+    """Permanently delete all data for a user. Requires admin approval."""
+    return f"All data for user {user_id} has been deleted."
+
+db = SqliteDb(db_file="app.db", approvals_table="approvals")
+agent = Agent(model=..., tools=[delete_user_data], db=db)
+
+run = agent.run("Delete all data for user U-100")
+When the user asks for something that uses this tool, the run pauses and a pending approval is written to the database. An admin resolves it; then you continue the run.
+​
+Approval Types
+Type	Behavior	Use Case
+@approval(type="required") or @approval	Blocking: Run pauses until an admin reviews and resolves the database record.	Critical actions such as deletion, payments, bulk emails.
+@approval(type="audit")	Non-blocking: Run continues immediately after the HITL interaction is resolved and an audit log is created.	Compliance and activity auditing purposes.
+​
+Blocking
+By default, @approval needs HITL approval and requires_confirmation=True is set.
+​
+Non-blocking
+To enable an audit-style (non-blocking) Human-in-the-Loop flow for persistent audit trails, use @approval(type="audit"). This will create an audit log after the HITL interaction is resolved.
+@approval(type="audit") requires at least one HITL flag (requires_confirmation=True, requires_user_input=True, or external_execution=True) on the @tool() decorator.
+See User Confirmation for details.
+​
+Execution Flow
+There are three distinct phases in the approval flow:
+The Pause: When a user triggers an @approval tool, the SDK automatically pauses the run and inserts a pending record into your database.
+Admin Approval: Admin views the list of pending requests. Then update the record status via the DB provider. Use expected_status="pending" to prevent race conditions.
+db.update_approval(
+    approval_id,
+    expected_status="pending",
+    status="approved",   # or "rejected"
+    resolved_by="admin_user_id",
+    resolved_at=int(time.time()),
+    # For requires_user_input or external_execution: pass resolution_data
+    # (e.g. values for user input, result for external execution); SDK applies it on continue_run.
+)
+Resuming the Run: Continue the run using the run_id and session_id. When called without requirements, the SDK verifies the resolution and applies it before proceeding. If the record is missing or still pending, continue_run raises a ValueError.
+run = agent.continue_run(run_id=run.run_id, session_id=run.session_id)
+​
+Examples
+Blocking approvals
+@approval + requires_confirmation: pause, DB record, resolve, continue.
+Approval list and resolve
+Full lifecycle: pause, list pending, resolve via DB, continue.
+Approval with user input
+@approval + requires_user_input.
+Approval with external execution
+@approval + external_execution.
+Team approvals
+Three patterns: tool on the team, on a member agent, or on both.
+Audit approval
+@approval(type=“audit”) + requires_confirmation: pause, confirm, continue, audit record (no admin gate).
+​
+Developer Resources
+Example code: Approvals cookbook.
+Approval reference
+Tool decorator
+Was this page helpful?

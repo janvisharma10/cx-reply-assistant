@@ -1,0 +1,36 @@
+Create Your Own Tools
+Creating your own tools
+Write custom tool functions and use the @tool decorator to modify tool behavior.
+
+
+Copy page
+
+In most production cases, you will need to write your own tools.
+The rule is simple:
+Any Python function can be used as a tool by an Agent.
+Use the @tool decorator to modify what happens before and after this tool is called.
+There are two main ways to create tools in Agno:
+Create a Python function (optionally using the @tool decorator)
+Create a Toolkit
+​
+Learn more
+Python Functions as Tools
+Turn any Python function into an agent tool.
+Toolkits
+Bundle related tools into reusable toolkits.
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Async Team with Tools
+Python Functions as Tools
+github
+x
+linkedin
+youtube
+website
+Powered by

@@ -1,0 +1,86 @@
+Usage
+Insert, Search, and Delete with PgVector
+Insert a PDF, search it with an agent, and delete PgVector rows by name or metadata.
+
+
+Copy page
+
+pgvector_db.py
+from agno.agent import Agent
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector
+
+vector_db = PgVector(
+    table_name="vectors",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+)
+knowledge = Knowledge(vector_db=vector_db)
+agent = Agent(knowledge=knowledge, search_knowledge=True)
+
+if __name__ == "__main__":
+    knowledge.insert(
+        name="Recipes",
+        url="https://agno-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf",
+        metadata={"doc_type": "recipe_book"},
+    )
+
+    agent.print_response("How do I make pad thai?", markdown=True)
+
+    vector_db.delete_by_name("Recipes")
+    vector_db.delete_by_metadata({"doc_type": "recipe_book"})
+delete_by_name() removes rows whose name matches exactly. delete_by_metadata() removes rows whose JSON metadata contains the supplied fields.
+​
+Run the Example
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Install dependencies
+
+uv pip install -U agno openai pgvector psycopg pypdf sqlalchemy
+3
+Run PgVector
+
+docker run -d \
+  -e POSTGRES_DB=ai \
+  -e POSTGRES_USER=ai \
+  -e POSTGRES_PASSWORD=ai \
+  -e PGDATA=/var/lib/postgresql \
+  -v pgvolume:/var/lib/postgresql \
+  -p 5532:5432 \
+  --name pgvector \
+  agnohq/pgvector:18
+4
+Export the API key
+
+export OPENAI_API_KEY=your_openai_api_key_here
+5
+Run the example
+
+python pgvector_db.py
+​
+Next Steps
+Task	Guide
+Run async Agno methods	Async PgVector usage
+Configure hybrid search	PgVector hybrid search
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Overview
+Async PgVector Usage
+github
+x
+linkedin
+youtube
+website

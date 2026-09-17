@@ -1,0 +1,47 @@
+For Agents
+Basic Instructions
+
+Copy page
+
+Set the instructions parameter on an Agent to control its response style and tone.
+
+Give the agent basic instructions to guide its response behavior and style.
+​
+Code
+instructions.py
+from agno.agent import Agent
+
+agent = Agent(instructions="Share a 2 sentence story about")
+agent.print_response("Love in the year 12000.")
+​
+Usage
+1
+Create a Python file
+
+Create instructions.py with the code above.
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno openai
+4
+Export your OpenAI API key
+
+
+Mac/Linux
+
+Windows
+export OPENAI_API_KEY="your_openai_api_key_here"
+5
+Run Agent
+
+python instructions.py
+Was this page helpful?

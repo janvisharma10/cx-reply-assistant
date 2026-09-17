@@ -1,0 +1,157 @@
+Models
+Fallback Models
+Route eligible model-provider failures to backup models for agents and teams.
+
+
+Copy page
+
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.models.openai import OpenAIChat
+
+agent = Agent(
+    model=OpenAIChat(id="gpt-5.4-mini"),
+    fallback_models=[Claude(id="claude-sonnet-4-5-20250929")],
+)
+fallback_models is shorthand for FallbackConfig(on_error=...). When the primary model raises an eligible ModelProviderError, Agno tries the fallback models in order until one succeeds.
+Install both provider integrations and set OPENAI_API_KEY and ANTHROPIC_API_KEY before running the examples:
+uv pip install "agno[openai,anthropic]"
+export OPENAI_API_KEY="your-openai-api-key"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+Model strings work for the primary and fallback models:
+from agno.agent import Agent
+
+agent = Agent(
+    model="openai-chat:gpt-5.4-mini",
+    fallback_models=["anthropic:claude-sonnet-4-5-20250929"],
+)
+Fallbacks catch model-provider errors. Exceptions outside ModelProviderError, such as application runtime errors, propagate without trying another model.
+Fallback configuration wraps calls to the agent or team leader’s primary model. It does not wrap separate reasoning_model, parser_model, or output_model calls.
+​
+Route Errors to Different Models
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.models.fallback import FallbackConfig
+from agno.models.openai import OpenAIChat
+
+agent = Agent(
+    model=OpenAIChat(id="gpt-5.4-mini"),
+    fallback_config=FallbackConfig(
+        on_rate_limit=[
+            OpenAIChat(id="gpt-4.1-mini"),
+            Claude(id="claude-sonnet-4-5-20250929"),
+        ],
+        on_context_overflow=[
+            Claude(id="claude-sonnet-4-5-20250929"),
+        ],
+        on_error=[
+            Claude(id="claude-sonnet-4-5-20250929"),
+        ],
+    ),
+)
+Agno classifies the primary error and selects one fallback list:
+Provider failure	Selected list	Behavior when the list is empty
+Rate limit or overload, including status 429 or 529	on_rate_limit	Use on_error
+Context-window overflow	on_context_overflow	Use on_error
+Other server, connection, or provider error	on_error	Re-raise the primary error
+Other HTTP 4xx client error	None	Re-raise the primary error
+Context-window errors are detected from ContextWindowExceededError or recognized error-message patterns. Other 4xx errors, including 400, 401, 403, 404, 413, and 422, are not routed through on_error.
+If every model in the selected list raises ModelProviderError, Agno re-raises the original primary-model error. The list is selected once from the primary error. A later fallback failure does not select a different error-specific list.
+​
+Retries and Fallback
+Each model applies its own retry settings before its failure reaches the fallback layer:
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.models.openai import OpenAIChat
+
+agent = Agent(
+    model=OpenAIChat(
+        id="gpt-5.4-mini",
+        retries=3,
+        exponential_backoff=True,
+    ),
+    fallback_models=[
+        Claude(id="claude-sonnet-4-5-20250929", retries=2),
+    ],
+)
+retries=3 allows up to four primary attempts: the first attempt and three retries. The fallback allows up to three attempts with retries=2.
+Retries apply only to retryable errors. Context-window errors and non-retryable client errors skip the remaining retry loop. An eligible context-window error can therefore activate a fallback immediately.
+​
+Streaming
+Fallbacks also wrap streaming model calls. When the primary model activates a fallback, Agno resets the accumulated response content before processing the first fallback’s chunks.
+A mid-stream failure can occur after primary-model or fallback-model chunks have reached the consumer. Those emitted chunks cannot be retracted. If one fallback emits chunks and then fails, Agno does not reset accumulated content before trying the next fallback. The completed run can therefore combine partial output from the failed fallback with output from the successful fallback. Treat streamed output as provisional, or use a non-streaming run when failover must produce one atomic response.
+​
+Fallback Callback
+Use callback to record which fallback completed the request:
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.models.fallback import FallbackConfig
+from agno.models.openai import OpenAIChat
+
+
+def on_fallback(primary_model_id: str, fallback_model_id: str, error: Exception) -> None:
+    print(f"[fallback] {primary_model_id} -> {fallback_model_id} (reason: {error})")
+
+
+agent = Agent(
+    model=OpenAIChat(id="gpt-5.4-mini"),
+    fallback_config=FallbackConfig(
+        on_error=[Claude(id="claude-sonnet-4-5-20250929")],
+        callback=on_fallback,
+    ),
+)
+The callback runs after a fallback succeeds. For streaming calls, it runs after the fallback stream completes. Callback exceptions are ignored so they do not interrupt a successful fallback.
+​
+Teams
+Fallback configuration on a Team applies to the team leader’s model calls. Configure member agents separately when they also need fallbacks.
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.models.openai import OpenAIChat
+from agno.team import Team
+
+researcher = Agent(
+    name="Researcher",
+    role="Research the requested topic.",
+    model=OpenAIChat(id="gpt-5.4-mini"),
+)
+
+team = Team(
+    name="Research Team",
+    model=OpenAIChat(id="gpt-5.4-mini"),
+    fallback_models=[Claude(id="claude-sonnet-4-5-20250929")],
+    members=[researcher],
+)
+​
+Parameters
+Available on Agent and Team:
+Parameter	Type	Description
+fallback_models	List[Model | str]	Models used as the on_error fallback list.
+fallback_config	FallbackConfig	Error-specific fallback lists and callback. Takes precedence when both parameters are set.
+FallbackConfig fields:
+Field	Type	Default	Description
+on_error	List[Model | str]	[]	General fallback list for eligible provider errors.
+on_rate_limit	List[Model | str]	[]	Preferred list for rate-limit and overload errors.
+on_context_overflow	List[Model | str]	[]	Preferred list for context-window errors.
+callback	Callable[[str, str, Exception], None]	None	Called after a fallback succeeds with the primary ID, fallback ID, and primary error.
+​
+Developer Resources
+Basic agent fallback example
+Error-specific fallback example
+Mid-run fallback example
+Fallback callback example
+Team fallback example
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Response Caching
+Overview
+github
+x
+linkedin
+youtube
+website

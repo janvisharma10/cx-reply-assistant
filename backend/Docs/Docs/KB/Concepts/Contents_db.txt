@@ -1,0 +1,151 @@
+Concepts
+Contents Database
+Track and manage the content you’ve added to your knowledge base.
+
+
+Copy page
+
+Contents Database is an optional component that tracks what you’ve added to your knowledge base. While the vector database stores embeddings for search, Contents Database stores metadata about each piece of content: what it is, when you added it, and its processing status.
+from agno.knowledge.knowledge import Knowledge
+from agno.db.postgres import PostgresDb
+from agno.vectordb.pgvector import PgVector
+
+knowledge = Knowledge(
+    vector_db=PgVector(table_name="vectors", db_url=db_url),
+    contents_db=PostgresDb(db_url=db_url),  # Enables content tracking
+)
+​
+Why Use Contents DB
+Without Contents DB, you can search your knowledge base but can’t see what’s in it or manage individual pieces of content.
+With Contents DB, you get:
+Visibility: See all content that’s been added, track processing status, view metadata
+Management: Delete specific content and automatically clean up associated vectors
+Updates: Edit names, descriptions, and metadata without rebuilding the knowledge base
+Filtering: Use agentic filtering to filter search results by metadata
+Contents DB is required for agentic filtering and the AgentOS Knowledge UI.
+​
+Setup
+Agno supports multiple database backends:
+PostgreSQL
+SQLite
+MongoDB
+In-Memory
+from agno.db.postgres import PostgresDb
+
+contents_db = PostgresDb(
+    db_url="postgresql+psycopg://user:pass@localhost:5432/db",
+    knowledge_table="knowledge_contents"  # Optional custom table name
+)
+Common backends include PostgreSQL, SQLite, MySQL, MongoDB, Redis, Valkey, DynamoDB, and Firestore. See database providers for the complete list.
+​
+Managing Content
+​
+Add Content with Metadata
+knowledge.insert(
+    name="Product Manual",
+    path="docs/manual.pdf",
+    metadata={"department": "engineering", "version": "2.1"}
+)
+​
+List Content
+contents, total_count = knowledge.get_content(
+    limit=20,
+    page=1,
+    sort_by="created_at",
+    sort_order="desc"
+)
+
+for content in contents:
+    print(content.name, content.status, content.created_at)
+​
+Get Content by ID
+content = knowledge.get_content_by_id(content_id)
+
+print(content.name)         # Content name
+print(content.description)  # Description
+print(content.metadata)     # Custom metadata
+print(content.file_type)    # File type (.pdf, .txt, etc.)
+print(content.size)         # File size in bytes
+print(content.status)       # Processing status
+print(content.created_at)   # When it was added
+print(content.updated_at)   # Last modification
+​
+Delete Content
+Deleting content automatically:
+Removes the content metadata from Contents DB
+Deletes associated vectors from the vector database
+Maintains consistency between both databases
+# Delete specific content
+knowledge.remove_content_by_id(content_id)
+
+# Delete all content
+knowledge.remove_all_content()
+​
+Filter by Metadata
+# Get available filter keys
+valid_filters = knowledge.get_valid_filters()
+
+# Search with filters
+results = knowledge.search(
+    query="technical documentation",
+    filters={"department": "engineering"}
+)
+​
+Schema
+Contents DB stores the following fields for each piece of content:
+Field	Type	Description
+id	str	Unique identifier
+name	str	Content name
+description	str	Content description
+metadata	dict	Custom metadata
+type	str	Content type
+size	int	File size in bytes
+linked_to	str	ID of linked content
+access_count	int	Number of times accessed
+status	str	Processing status
+status_message	str	Status details
+created_at	int	Created timestamp
+updated_at	int	Updated timestamp
+external_id	str	External ID for integrations like LightRAG
+​
+AgentOS Integration
+Contents DB is required for the AgentOS Knowledge UI. With it, the web interface provides:
+Content Browser: View all uploaded content with metadata
+Upload Interface: Add new content through the web UI
+Status Monitoring: Processing status and error details
+Metadata Editor: Update content metadata through forms
+Search and Filtering: Find content by metadata attributes
+Bulk Operations: Manage multiple content items at once
+from agno.os import AgentOS
+from agno.agent import Agent
+
+knowledge = Knowledge(
+    vector_db=PgVector(table_name="vectors", db_url=db_url),
+    contents_db=PostgresDb(db_url=db_url),
+)
+
+agent = Agent(name="Knowledge Agent", knowledge=knowledge)
+
+agent_os = AgentOS(
+    id="knowledge-demo",
+    agents=[agent],
+)
+
+app = agent_os.get_app()
+See AgentOS Knowledge Management for more details.
+​
+Next Steps
+Vector DB
+Understand the embedding storage layer
+Filtering
+Filter search results by metadata
+AgentOS
+Manage knowledge through the web UI
+Database Setup
+Database configuration guides
+Was this page helpful?
+
+
+Yes
+
+No

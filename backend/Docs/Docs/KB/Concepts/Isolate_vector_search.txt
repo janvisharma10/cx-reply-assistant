@@ -1,0 +1,143 @@
+Concepts
+Isolate Vector Search
+Scope searches to a single Knowledge instance when multiple instances share the same vector database.
+
+
+Copy page
+
+When multiple Knowledge instances share the same vector database, searches return results from all instances by default. Set isolate_vector_search=True to scope each instance’s searches to its own data.
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector
+
+vector_db = PgVector(
+    table_name="shared_vectors",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+)
+
+# Only returns results from documents this instance inserted
+knowledge = Knowledge(
+    name="support-docs",
+    vector_db=vector_db,
+    isolate_vector_search=True,
+)
+​
+How It Works
+On insert, each document always gets linked_to metadata set to the Knowledge instance’s name (an empty string if the instance has no name), regardless of this setting. The flag controls search behavior:
+When isolate_vector_search=True:
+Search: A linked_to filter is automatically injected, so only matching documents are returned.
+When isolate_vector_search=False (default):
+Search: No linked_to filter is applied. Searches return results from all documents in the vector database.
+​
+When to Use
+Scenario	isolate_vector_search
+Single Knowledge instance	False (default)
+Multiple instances, each with its own vector database	False (default)
+Multiple instances sharing one vector database, need isolation	True
+​
+Example: Shared Database, Isolated Searches
+from agno.agent import Agent
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector
+
+vector_db = PgVector(
+    table_name="shared_vectors",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+)
+
+# Two knowledge instances sharing the same vector database
+hr_knowledge = Knowledge(
+    name="hr-docs",
+    vector_db=vector_db,
+    isolate_vector_search=True,
+)
+
+engineering_knowledge = Knowledge(
+    name="engineering-docs",
+    vector_db=vector_db,
+    isolate_vector_search=True,
+)
+
+# Insert into each instance
+hr_knowledge.insert(path="hr-policies/")
+engineering_knowledge.insert(path="engineering-docs/")
+
+# This agent only searches HR documents
+hr_agent = Agent(knowledge=hr_knowledge, search_knowledge=True)
+
+# This agent only searches engineering documents
+eng_agent = Agent(knowledge=engineering_knowledge, search_knowledge=True)
+​
+Backwards Compatibility
+isolate_vector_search defaults to False. Existing Knowledge instances behave exactly as before.
+​
+Existing data does not have linked_to metadata
+Documents indexed before this flag existed do not have linked_to in their vector database metadata. When you enable isolate_vector_search=True, searches filter for linked_to=<name>. Documents without this metadata field will not match and will be invisible to the isolated search.
+Enabling isolate_vector_search=True with vector databases that don’t have existing linked_to metadata will cause those documents to disappear from search results. You must re-index or manually update the metadata to restore them.
+​
+Combining with Manual Filters
+When isolate_vector_search=True, the linked_to filter is automatically merged with any filters you pass, regardless of filter format:
+# Dict-based filters: linked_to is merged automatically
+results = hr_knowledge.search(
+    query="vacation policy",
+    filters={"department": "legal"},
+)
+# Searches for: linked_to="hr-docs" AND department="legal"
+# List-based filters (FilterExpr): linked_to is also injected automatically
+from agno.filters import EQ
+
+results = hr_knowledge.search(
+    query="vacation policy",
+    filters=[EQ("department", "legal")],
+)
+# Searches for: linked_to="hr-docs" AND department="legal"
+​
+Instance Uniqueness
+Each Knowledge instance must have a unique combination of name, database, and table. Registering two instances with the same name, contents database, and table in an AgentOS raises a ValueError when the AgentOS starts.
+from agno.db.postgres import PostgresDb
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector
+
+contents_db = PostgresDb(
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+    knowledge_table="knowledge_contents",
+)
+
+vector_db = PgVector(
+    table_name="shared_vectors",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+)
+
+# These two instances will conflict because they share the same
+# name, contents_db, and table
+knowledge_a = Knowledge(
+    name="my-docs",
+    contents_db=contents_db,
+    vector_db=vector_db,
+)
+
+knowledge_b = Knowledge(
+    name="my-docs",          # same name
+    contents_db=contents_db,  # same database and table
+    vector_db=vector_db,
+)
+# Registering both with an AgentOS raises at startup:
+# ValueError: Duplicate knowledge instances detected
+To fix this, give each instance a unique name, or point them to different contents databases or tables.
+​
+Requirements
+The Knowledge instance must have a name set. Without a name, documents are tagged with an empty linked_to value and no filter is applied, even when isolate_vector_search=True.
+The vector database must support metadata filtering. See Filtering for supported databases.
+​
+Next Steps
+Task	Guide
+Filter by other metadata	Filtering
+Set up a vector database	Vector Databases
+Track content metadata	Contents DB
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+R

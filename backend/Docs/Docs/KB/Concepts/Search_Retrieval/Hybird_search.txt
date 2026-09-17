@@ -1,0 +1,125 @@
+Search & Retrieval
+Hybrid Search
+Combine vector and lexical search signals with a supported vector database.
+
+
+Copy page
+
+Hybrid search combines vector similarity with a database-specific lexical search signal.
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector, SearchType
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+knowledge = Knowledge(
+    vector_db=PgVector(
+        table_name="docs",
+        db_url=db_url,
+        search_type=SearchType.hybrid,
+    ),
+)
+​
+How It Works
+The implementation depends on the vector database. A hybrid search generally:
+Computes a vector similarity signal.
+Computes a lexical signal from the query and document text.
+Combines or fuses the signals into one ranking.
+PgVector combines normalized vector similarity and PostgreSQL full-text ranking in one query. Set vector_score_weight between 0 and 1 to control their relative contribution. The default is 0.5.
+Chroma runs vector search and a lexical candidate search, then merges their rankings with Reciprocal Rank Fusion (RRF). Its lexical path filters on the first query token and scores term overlap.
+Each vector database maps SearchType.hybrid to its own query and ranking algorithm. Check the selected integration before tuning retrieval.
+​
+When to Use Hybrid Search
+Query Pattern	Search Type to Test
+Conceptual questions with varied phrasing	Vector
+IDs, codes, or terms that must occur in the text	Keyword
+Queries that mix concepts with specific terminology	Hybrid
+Evaluate the available search types against representative queries and expected documents. Ranking behavior also depends on the embedder, content, chunking strategy, and database configuration.
+​
+Configuration
+​
+Basic Setup
+from agno.vectordb.pgvector import PgVector, SearchType
+
+vector_db = PgVector(
+    table_name="docs",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+    search_type=SearchType.hybrid,
+    vector_score_weight=0.7,
+)
+​
+With Reranking
+Apply a reranker to the fused candidates:
+from agno.knowledge.reranker.cohere import CohereReranker
+from agno.vectordb.pgvector import PgVector, SearchType
+
+vector_db = PgVector(
+    table_name="docs",
+    db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+    search_type=SearchType.hybrid,
+    reranker=CohereReranker(),
+)
+​
+Chroma RRF Constant
+For Chroma, hybrid_rrf_k controls how strongly rank position affects the fused score. Higher values reduce the difference between adjacent ranks. The default is 60.
+from agno.vectordb.chroma import ChromaDb, SearchType
+
+vector_db = ChromaDb(
+    collection="docs",
+    path="tmp/chromadb",
+    search_type=SearchType.hybrid,
+    hybrid_rrf_k=60,  # Default is 60
+)
+​
+Example
+Install the dependencies used on this page and start a PostgreSQL instance with pgvector enabled:
+uv pip install -U agno chromadb cohere openai pgvector psycopg pypdf sqlalchemy
+hybrid_search.py
+from agno.knowledge.knowledge import Knowledge
+from agno.vectordb.pgvector import PgVector, SearchType
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+knowledge = Knowledge(
+    vector_db=PgVector(
+        table_name="recipes",
+        db_url=db_url,
+        search_type=SearchType.hybrid,
+    ),
+)
+
+knowledge.insert(
+    url="https://agno-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf",
+)
+
+results = knowledge.search("chicken coconut soup", max_results=5)
+for doc in results:
+    print(doc.content[:200])
+​
+Supported Vector Databases
+Vector Database	Hybrid Search Notes
+PgVector	Weighted PostgreSQL full-text and vector scores
+Chroma	Term-overlap lexical ranking and vector ranking fused with RRF
+LanceDB	Supports SearchType.hybrid
+Weaviate	Uses Weaviate hybrid queries
+Milvus	Uses dense and sparse vectors
+Pinecone	Requires use_hybrid_search=True
+Qdrant	Uses dense and sparse named vectors
+MongoDB	Supports SearchType.hybrid
+Redis	Supports vector, keyword, and hybrid search
+​
+Developer Resources
+Search and retrieval
+Vector database integrations
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Overview
+Vector Search
+github
+x
+linkedin

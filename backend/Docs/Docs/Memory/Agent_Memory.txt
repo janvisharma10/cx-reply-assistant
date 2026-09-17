@@ -1,0 +1,60 @@
+Agents with Memory
+Agent Memory
+Store and recall user-specific facts across agent runs.
+
+
+Copy page
+
+Agent memory stores user-specific facts in a database and recalls them in later runs.
+​
+User Memories
+Set enable_agentic_memory=True to let the agent decide when to create or update memories:
+memory_demo.py
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from agno.db.postgres import PostgresDb
+from rich.pretty import pprint
+
+user_id = "ava"
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+db = PostgresDb(
+    db_url=db_url,
+    memory_table="user_memories",
+)
+
+
+memory_agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=db,
+    enable_agentic_memory=True,
+    # Alternatively, run MemoryManager at the end of every run:
+    # update_memory_on_run=True,
+    markdown=True,
+)
+
+db.clear_memories()
+
+memory_agent.print_response(
+    "My name is Ava and I like to ski.",
+    user_id=user_id,
+    stream=True,
+)
+print("Memories about Ava:")
+pprint(memory_agent.get_user_memories(user_id=user_id))
+
+memory_agent.print_response(
+    "I live in San Francisco. Where should I move within a four-hour drive?",
+    user_id=user_id,
+    stream=True,
+)
+print("Memories about Ava:")
+pprint(memory_agent.get_user_memories(user_id=user_id))
+enable_agentic_memory=True gives the agent one update_user_memory tool backed by MemoryManager. Set update_memory_on_run=True to run MemoryManager at the end of every run instead.
+See the Memory overview.
+​
+Developer Resources
+Agent schema
+Memory examples
+Memory cookbook

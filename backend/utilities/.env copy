@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────
+#  LLM Configuration (OpenRouter)
+#  These values are used globally — no need to pass them when
+#  creating agents via the API.
+# ─────────────────────────────────────────────────────────────
+OPENROUTER_API_KEY=
+OPENROUTER_BASE_URL=
+DEFAULT_MODEL=
+
+# ─────────────────────────────────────────────────────────────
+#  Embedding Model (used by Knowledge Base ingestion)
+# ─────────────────────────────────────────────────────────────
+EMBEDDING_MODEL=
+
+# ─────────────────────────────────────────────────────────────
+#  Storage & Persistence
+# ─────────────────────────────────────────────────────────────
+DATABASE_URL=
+CHROMA_PERSIST_DIR=
+UPLOAD_DIR=
+
+# ─────────────────────────────────────────────────────────────
+#  Guardrails Configuration (Llama Guard 4 via OpenRouter)
+# ─────────────────────────────────────────────────────────────
+LLAMA_GUARD_MODEL=
+LLAMA_GUARD_API_KEY=
+LLAMA_GUARD_BASE_URL=
+ENABLE_GUARDRAILS=

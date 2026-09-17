@@ -1,0 +1,96 @@
+Models
+Compatibility Overview
+How Agno adapters, provider endpoints, and model IDs determine feature compatibility.
+
+
+Copy page
+
+Model compatibility depends on the Agno adapter, the provider endpoint, and the selected model ID. Capabilities still vary across models behind the shared interface.
+​
+Shared Model Interface
+Every concrete Model adapter implements synchronous, asynchronous, streaming, and non-streaming invocation methods. Request features require support from additional layers:
+Feature	What to verify
+Streaming	The selected model and endpoint stream responses.
+Tool calling	The selected model accepts tool schemas and returns tool calls.
+Structured output	The adapter and model support the selected native schema, JSON mode, or structured-output tool path.
+Multimodal input and output	The adapter handles the media type and the selected model accepts or returns that modality.
+OpenAI-compatible adapters reuse an API format. Feature parity with OpenAI models varies. Gateways can route one adapter to models with different capabilities.
+​
+Multimodal Support
+Each checkmark records a media path implemented by the adapter and corroborated by provider documentation, an Agno provider guide, a matching cookbook, or an automated test. A checkmark is an adapter-level signal. Select a model ID that supports the same modality. A blank cell means this page makes no compatibility claim.
+Agno Adapter	Image Input	Audio Input	Audio Responses	Video Input	File Input
+AIMLAPI	✅				
+Claude (Anthropic)	✅				✅
+AwsBedrock	✅			✅	✅
+Claude (AWS Bedrock)	✅				
+AzureAIFoundry	✅				
+AzureFoundryClaude	✅				✅
+AzureOpenAI	✅				
+Cerebras					
+CerebrasOpenAI					
+Cloudflare					
+Cohere	✅				
+CometAPI	✅				
+DashScope	✅				
+DeepInfra					
+DeepSeek					
+Fireworks					
+Gemini	✅	✅	✅	✅	✅
+GeminiInteractions	✅	✅	✅	✅	✅
+Groq	✅				
+HuggingFace					
+WatsonX	✅				
+Inception					
+InternLM					
+LangDB					
+LiteLLM	✅	✅			✅
+LiteLLMOpenAI	✅	✅			
+LlamaCpp					
+LMStudio	✅				
+Llama	✅				
+LlamaOpenAI	✅				
+MiniMax					
+MistralChat	✅				
+MoonShot					
+N1N					
+Nebius					
+Neosantara					
+Nexus					
+Nvidia					
+Ollama	✅				
+OllamaResponses					
+OpenAIChat	✅	✅	✅		✅
+OpenAIResponses	✅				✅
+OpenResponses					
+OpenRouter					
+OpenRouterResponses					
+Perplexity					
+Portkey					
+Requesty					
+Sambanova					
+Siliconflow					
+Together	✅				
+TuningEngines					
+V0	✅				
+VLLM					
+Claude (Vertex AI)	✅				✅
+xAI	✅				
+MiMo					
+​
+Developer Resources
+Model provider guides
+Structured output guide
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Model as String
+Response Caching
+github
+x
+linkedin
+youtube

@@ -1,0 +1,188 @@
+Human-in-the-Loop
+User Confirmation
+
+Copy page
+
+Require explicit user approval before executing tool calls in your agents.
+
+User confirmation allows you to pause execution and require explicit user approval before proceeding with tool calls. This is useful for:
+Sensitive operations
+API calls that modify data
+Actions with significant consequences
+​
+How It Works
+When you mark a tool with @tool(requires_confirmation=True), your agent will:
+Pause execution when the tool is about to be called
+Set is_paused to True on the run response
+Wait for you to review the tool call and decide whether to approve or reject it
+Continue execution once you call continue_run() with your decision
+This gives you complete control over which tools execute and when. Use it in production scenarios that need human oversight.
+​
+Basic Example
+The following example shows how to implement user confirmation with a custom tool:
+from agno.tools import tool
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+
+@tool(requires_confirmation=True)
+def sensitive_operation(data: str) -> str:
+    """Perform a sensitive operation that requires confirmation."""
+    # Implementation here
+    return "Operation completed"
+
+# A database is required to continue a run by run_id
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    tools=[sensitive_operation],
+    db=SqliteDb(db_file="tmp/example.db"),
+)
+
+# Run the agent
+run_response = agent.run("Perform sensitive operation")
+
+# Handle confirmation
+for requirement in run_response.active_requirements:
+    if requirement.needs_confirmation:
+        # Get user confirmation
+        print(f"Tool {requirement.tool_execution.tool_name}({requirement.tool_execution.tool_args}) requires confirmation")
+        if input("Confirm? (y/n): ").lower() == "y":
+            requirement.confirm()
+        else:
+            requirement.reject()
+
+# After resolving the requirement, you can continue the run:
+response = agent.continue_run(run_id=run_response.run_id, requirements=run_response.requirements)
+​
+Toolkit-Level Confirmation
+You can also specify which specific tools in a toolkit require confirmation using the requires_confirmation_tools parameter. Use it to protect specific operations in a toolkit while allowing others to run freely:
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+from agno.tools.yfinance import YFinanceTools
+from agno.utils import pprint
+from rich.console import Console
+from rich.prompt import Prompt
+
+console = Console()
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    tools=[YFinanceTools(requires_confirmation_tools=["get_current_stock_price"])],
+    markdown=True,
+    db=SqliteDb(db_file="tmp/example.db"),
+)
+
+run_response = agent.run("Get the current stock price of Apple?")
+
+for requirement in run_response.active_requirements:
+    if requirement.needs_confirmation:
+        # Ask for confirmation
+        console.print(
+            f"Tool name [bold blue]{requirement.tool_execution.tool_name}({requirement.tool_execution.tool_args})[/] requires confirmation."
+        )
+        message = (
+            Prompt.ask("Do you want to continue?", choices=["y", "n"], default="y")
+            .strip()
+            .lower()
+        )
+
+        if message == "n":
+            requirement.reject()
+        else:
+            requirement.confirm()
+
+run_response = agent.continue_run(run_id=run_response.run_id, requirements=run_response.requirements)
+pprint.pprint_run_response(run_response)
+​
+Providing Rejection Feedback
+When rejecting a tool call, you can provide feedback to the agent using the confirmation_note property. This helps the agent understand why the operation was rejected and potentially choose a better approach:
+if run_response.is_paused:
+    for tool in run_response.tools_requiring_confirmation:
+        print(f"Tool {tool.tool_name}({tool.tool_args}) requires confirmation")
+        confirmed = input(f"Confirm? (y/n): ").lower() == "y"
+
+        if confirmed:
+            tool.confirmed = True
+        else:
+            tool.confirmed = False
+            tool.confirmation_note = "This operation was rejected because it targets the wrong resource. Please use the alternative method."
+
+    response = agent.continue_run(run_id=run_response.run_id, updated_tools=run_response.tools)
+​
+Mixed Tool Scenarios
+You can mix tools that require confirmation with tools that don’t. The agent will execute the non-confirmation tools automatically and only pause for those that need approval:
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+from agno.tools import tool
+
+def safe_operation() -> str:
+    """This runs automatically without confirmation."""
+    return "Safe operation completed"
+
+@tool(requires_confirmation=True)
+def risky_operation() -> str:
+    """This requires user confirmation."""
+    return "Risky operation completed"
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    tools=[safe_operation, risky_operation],
+    db=SqliteDb(db_file="tmp/example.db"),
+)
+
+run_response = agent.run("Perform both operations")
+
+if run_response.is_paused:
+    # Only the risky_operation will be in tools_requiring_confirmation
+    for tool in run_response.tools_requiring_confirmation:
+        # Handle confirmation...
+        tool.confirmed = True
+
+    response = agent.continue_run(run_id=run_response.run_id, updated_tools=run_response.tools)
+​
+Async Support
+User confirmation works with async agents. Use arun() and acontinue_run():
+run_response = await agent.arun("Perform sensitive operation")
+
+if run_response.is_paused:
+    for tool in run_response.tools_requiring_confirmation:
+        tool.confirmed = True
+
+    response = await agent.acontinue_run(run_response=run_response)
+​
+Streaming Support
+User confirmation also works with streaming responses. The agent will pause mid-stream when it encounters a tool that requires confirmation:
+for run_event in agent.run("Perform sensitive operation", stream=True):
+    if run_event.is_paused:
+        for tool in run_event.tools_requiring_confirmation:
+            tool.confirmed = True
+
+        # Continue streaming
+        response = agent.continue_run(
+            run_id=run_event.run_id,
+            updated_tools=run_event.tools,
+            stream=True
+        )
+Remember that tools marked with @tool(requires_confirmation=True) are mutually exclusive with @tool(requires_user_input=True) and @tool(external_execution=True).
+A tool can only use one of these patterns at a time.
+​
+Usage Examples
+Basic Confirmation
+Simple user confirmation flow
+Async Confirmation
+Using confirmation with async agents
+Mixed Tools
+Combining confirmation and non-confirmation tools
+Multiple Tools
+Handling multiple confirmations
+Streaming Async
+Confirmation with streaming responses
+Toolkit Confirmation
+Using confirmation with toolkits
+With History
+Confirmation with chat history
+With Run ID
+Resume confirmation using run_id
+Was this page helpful?

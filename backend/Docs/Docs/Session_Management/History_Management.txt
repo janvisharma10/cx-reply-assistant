@@ -1,0 +1,68 @@
+Session Management
+History Management
+
+Copy page
+
+Control how conversation history is accessed and used
+
+Agents and Teams with a database configured automatically track message and run history. You have multiple ways to access and use this history to give your agents and teams “memory” of past conversations.
+​
+Common Patterns
+​
+Automatic History (Most Common)
+Enable add_history_to_context=True to automatically include recent messages in every run:
+
+Agent
+
+Team
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=SqliteDb(db_file="tmp/data.db"),
+    add_history_to_context=True,
+    num_history_runs=3,  # Last 3 conversation turns
+)
+When to use: Chat-style products, quick prototypes, any scenario where responses need context from previous turns.
+​
+On-Demand History Access
+Enable read_chat_history=True to let the model decide when to look up history:
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=SqliteDb(db_file="tmp/data.db"),
+    read_chat_history=True,  # Model can call get_chat_history() tool
+)
+When to use: Analytics, auditing, or when you want the model to selectively access history rather than always including it.
+​
+Programmatic Access
+Retrieve history directly in your code:
+# User and assistant messages for the session
+chat_history = agent.get_chat_history()
+
+# All session messages, excluding those tagged as history in previous runs
+messages = agent.get_session_messages()
+
+# Last run output with metrics and tool calls
+last_run = agent.get_last_run_output()
+When to use: Building your own UI, analytics, debugging, or when you need raw transcripts.
+​
+Choosing a Pattern
+Short chats: Leave defaults (history off) or enable add_history_to_context with num_history_runs=3
+Long-lived threads: Combine limited history (num_history_runs=2) with session summaries to keep tokens manageable
+Tool-heavy agents: Use max_tool_calls_from_history to limit tool call noise in context
+Audit/debug flows: Enable read_chat_history=True so the model looks things up only when needed
+Cross-session recall: Use search_past_sessions=True with num_past_sessions_to_search=2 (keep low to avoid context limits)
+Programmatic workflows: Call get_session_messages() / get_chat_history() directly in your code
+​
+Learn More
+For comprehensive guides, detailed examples, and advanced patterns:
+Chat History in Agents
+Complete guide to agent history management with detailed examples and advanced patterns.
+Chat History in Teams
+Team-specific history features, member coordination, and shared context patterns.
+Chat History Overview
+Overview of all history capabilities across agents, teams, and workflows.
+Was this page helpful?
+
+
+Yes
+
+No

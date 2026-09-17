@@ -1,0 +1,115 @@
+Human-in-the-Loop
+Human-in-the-Loop (HITL)
+
+Copy page
+
+Control agent execution flow with human oversight and input.
+
+Human-in-the-Loop (HITL) in Agno enables you to implement patterns where human oversight and input are required during agent execution. This is crucial for:
+Validating sensitive operations
+Reviewing tool calls before execution
+Gathering user input for decision-making
+Managing external tool execution
+​
+Use Cases
+Agno supports various human-in-the-loop (HITL) use cases for agents, teams and workflows:
+User Confirmation: Require explicit user approval before executing a tool
+User Input: Gather specific information from users during execution
+Dynamic User Input: Have the agent collect user input as it needs it
+External Tool Execution: Execute tools outside of the agent’s control
+Requires Approval or Audit: The workflow requires an admin review (approval/rejection) or an optional audit-only mode logging without pausing
+​
+HITL Requirements
+During Human-in-the-Loop flows, the agent run pauses until the HITL requirements are resolved by the admin, user or external tool.
+You can interact with the HITL requirements in the code as follows:
+# We run the Agent and get the run response
+run_response = agent.run("Perform sensitive operation")
+
+# In our run_response, we will find a list of active requirements:
+for requirement in run_response.active_requirements:
+
+    # We can now iterate over the requirements and resolve them:
+
+    # For example, if the requirement needs user confirmation:
+    if requirement.needs_confirmation:
+        # Ask the user for confirmation
+        confirmation = input(f"Do you approve the tool call to {requirement.tool_execution.tool_name} with args {requirement.tool_execution.tool_args}? (y/n): ")
+
+        # Resolve the requirement by confirming or rejecting it, based on the user's input
+        if confirmation.lower() == "y":
+            requirement.confirm()
+        else:
+            requirement.reject()
+Similarly, you can check the requirement for resolving the HITL pauses to see if a user input is required or an external tool is required:
+for requirement in run_response.active_requirements:
+
+    # If the requirement is about user confirmation:
+    if requirement.needs_confirmation:
+        ...
+
+    # If the requirement is about obtaining user input:
+    if requirement.needs_user_input:
+        ...
+
+    # If the requirement is about executing an external tool:
+    if requirement.needs_external_execution:
+        ...
+​
+Resuming Execution
+After all active requirements have been resolved, you can continue the run by calling the continue_run method. The continue_run method continues with the state of the agent at the time of the pause.
+run_response = agent.run("Perform sensitive operation")
+
+for requirement in run_response.active_requirements:
+    # You handle any active requirements here
+    ...
+
+# After resolving all requirements, you can continue the run:
+response = agent.continue_run(run_id=run_response.run_id, requirements=run_response.requirements)
+You can also call the continue_run method passing the RunOutput of the specific run to continue:
+response = agent.continue_run(run_response=run_response)
+​
+Streaming HITL Flows
+You can also stream the responses you get during a Human-in-the-Loop flow. This is useful when you want to process or show the response in real-time. You can also stream the events resulting from calling the continue_run or acontinue_run methods.
+For streaming you must handle the events received while streaming the Agent run.
+If any event is paused, then you will need to handle the active requirements:
+for run_event in agent.run("Perform sensitive operation", stream=True):
+    if run_event.is_paused:
+        for requirement in run_event.active_requirements:
+            # You handle any active requirements here
+            ...
+
+        for event in agent.continue_run(run_id=run_event.run_id, requirements=run_event.requirements, stream=True):
+            # Handle the continuation events
+            ...
+​
+Teams
+HITL works the same way for Teams. If a member agent calls a tool that requires confirmation, user input, or external execution, the team run pauses until the requirement is resolved. Each requirement includes member_agent_name, so you know which agent triggered it.
+run_response = team.run("What is the weather in Tokyo?")
+
+if run_response.is_paused:
+    for requirement in run_response.active_requirements:
+        if requirement.needs_confirmation:
+            print(f"Member {requirement.member_agent_name} wants to call {requirement.tool_execution.tool_name}")
+            requirement.confirm()
+
+    run_response = team.continue_run(run_response)
+Tools attached directly to the Team (rather than individual member agents) also support HITL. If the team leader calls a tool that requires confirmation, the run pauses in the same way.
+See Team HITL examples for complete examples.
+​
+Learn More
+User Confirmation
+Require explicit user approval before executing tool calls
+User Input
+Gather specific information from users during execution
+Dynamic User Input
+Let agents request user input dynamically when needed
+External Tool Execution
+Execute tools outside of the agent’s control
+Approval
+Admin approval with persistence, resolution tracking, and audit trails
+​
+Developer Resources
+Agent HITL examples
+Team HITL examples
+Slack HITL integration: interactive TaskCards for approvals in Slack
+Was this page helpful?

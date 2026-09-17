@@ -1,0 +1,22 @@
+Metrics
+Metrics
+
+Copy page
+
+Token usage, cost, timing, and per-model breakdowns for agents, teams, and workflows.
+
+Every agent, team, and workflow response includes metrics for token usage, cost, timing, and per-model breakdowns. See the Metrics reference for field-level details.
+​
+Learn more
+Agent Metrics
+Run, message, and session metrics for agents.
+Team Metrics
+Run, message, member, and session metrics for teams.
+Workflow Metrics
+Workflow and step-level metrics.
+Was this page helpful?
+
+
+Yes
+
+No

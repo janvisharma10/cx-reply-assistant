@@ -1,0 +1,62 @@
+For Agents
+Instructions via Function
+
+Copy page
+
+Generate agent instructions from a function that reads the agent’s own properties, such as its name.
+
+Pass a function as instructions to generate them dynamically from the agent’s properties.
+​
+Code
+instructions_via_function.py
+from typing import List
+
+from agno.agent import Agent
+
+
+def get_instructions(agent: Agent) -> List[str]:
+    return [
+        f"Your name is {agent.name}!",
+        "Talk in haiku's!",
+        "Use poetry to answer questions.",
+    ]
+
+
+agent = Agent(
+    name="AgentX",
+    instructions=get_instructions,
+    markdown=True,
+)
+agent.print_response("Who are you?", stream=True)
+​
+Usage
+1
+Create a Python file
+
+Create instructions_via_function.py with the code above.
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno openai
+4
+Export your OpenAI API key
+
+
+Mac/Linux
+
+Windows
+export OPENAI_API_KEY="your_openai_api_key_here"
+5
+Run Agent
+
+python instructions_via_function.py
+Was this page helpful?

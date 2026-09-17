@@ -1,0 +1,59 @@
+For Agents
+Providing Datetime
+
+Copy page
+
+Add the current date and time to an agent’s context with add_datetime_to_context and a timezone_identifier.
+
+Add the current date and time to agent instructions so the agent can give time-aware responses.
+​
+Code
+datetime_instructions.py
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    add_datetime_to_context=True,
+    timezone_identifier="Etc/UTC",
+)
+agent.print_response(
+    "What is the current date and time? What is the current time in NYC?"
+)
+​
+Usage
+1
+Create a Python file
+
+Create datetime_instructions.py with the code above.
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno openai
+4
+Export your OpenAI API key
+
+
+Mac/Linux
+
+Windows
+export OPENAI_API_KEY="your_openai_api_key_here"
+5
+Run Agent
+
+python datetime_instructions.py
+Was this page helpful?
+
+
+Yes
+
+No

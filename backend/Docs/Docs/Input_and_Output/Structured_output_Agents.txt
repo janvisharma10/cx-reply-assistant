@@ -1,0 +1,170 @@
+Structured Output
+Structured Output for Agents
+Get a validated Pydantic object from an agent instead of raw text.
+
+
+Copy page
+
+Structured output constrains an agent’s response to match a Pydantic schema. Instead of parsing free-form text, you get a validated object with typed fields.
+​
+Basic Usage
+Define a Pydantic model and pass it as output_schema:
+from pydantic import BaseModel, Field
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+
+class MovieScript(BaseModel):
+    setting: str = Field(description="Where the movie takes place")
+    genre: str = Field(description="Movie genre")
+    storyline: str = Field(description="Brief plot summary")
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=MovieScript,
+)
+
+response = agent.run("Write a movie script about a heist in Tokyo")
+
+# response.content is a MovieScript object, not a string
+print(response.content.setting)    # "Tokyo, Japan - 2024"
+print(response.content.genre)      # "Action/Thriller"
+print(response.content.storyline)  # "A retired thief is pulled back..."
+​
+How It Works
+When you set output_schema, Agno:
+Converts your Pydantic model to a JSON schema
+Passes this schema to the model’s structured output API (if supported)
+Validates the response against your schema
+Returns a typed Pydantic object in response.content
+Native schema support depends on the model. Agno requests JSON and parses it into the Pydantic model when native schema output is unavailable.
+Fallback parsing failures are logged and can leave response.content as a string. Check its type before accessing schema fields when the model lacks native schema support.
+​
+Control output_schema Per-Run
+Override or set the schema at run time:
+agent = Agent(model=OpenAIResponses(id="gpt-5.2"))
+
+# Different schemas for different calls
+sentiment = agent.run("Analyze sentiment: 'Great product!'", output_schema=SentimentResult)
+entities = agent.run("Extract entities from this text...", output_schema=EntityList)
+This is useful when one agent handles multiple tasks with different output formats.
+​
+With Tools
+Structured output works alongside tools. The agent calls tools during execution, then formats the final response according to your schema:
+from pydantic import BaseModel, Field
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from agno.tools.yfinance import YFinanceTools
+
+class StockAnalysis(BaseModel):
+    symbol: str
+    current_price: float
+    change_percent: float
+    recommendation: str = Field(description="buy, hold, or sell")
+    reasoning: str
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    tools=[YFinanceTools()],
+    output_schema=StockAnalysis,
+)
+
+# Agent calls YFinanceTools to get live data, then returns structured StockAnalysis
+response = agent.run("Analyze NVDA and give me a recommendation")
+analysis: StockAnalysis = response.content
+
+print(analysis.symbol)          # "NVDA"
+print(analysis.current_price)   # 142.50
+print(analysis.recommendation)  # "buy"
+​
+Schema Design Tips
+​
+Use Field Descriptions
+Descriptions guide the model on what to generate:
+class Review(BaseModel):
+    # Description tells the model which values to return
+    sentiment: str = Field(description="Must be 'positive', 'negative', or 'neutral'")
+    confidence: float = Field(ge=0, le=1, description="Confidence score from 0.0 to 1.0")
+
+    # No field description
+    rating: int
+​
+Use Constraints
+Pydantic checks field constraints when the response is parsed:
+from pydantic import BaseModel, Field
+
+class Rating(BaseModel):
+    score: int = Field(ge=1, le=5, description="Rating from 1 to 5")
+    tags: list[str] = Field(min_length=1, max_length=5)
+​
+Use Optional for Uncertain Fields
+Mark fields as optional when data might not be available:
+class CompanyInfo(BaseModel):
+    name: str
+    ticker: str
+    market_cap: float | None = Field(None, description="Market cap if publicly traded")
+    founded_year: int | None = None
+​
+Common Patterns
+​
+Data Extraction
+from pydantic import BaseModel, Field
+
+class ExtractedData(BaseModel):
+    emails: list[str] = Field(default_factory=list)
+    phone_numbers: list[str] = Field(default_factory=list)
+    addresses: list[str] = Field(default_factory=list)
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=ExtractedData,
+)
+
+response = agent.run(f"Extract contact info from: {document_text}")
+​
+Classification
+from typing import Literal
+from pydantic import BaseModel, Field
+
+class Classification(BaseModel):
+    category: Literal["spam", "not_spam"]
+    confidence: float = Field(ge=0, le=1)
+    reasoning: str
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=Classification,
+)
+​
+Multi-Item Generation
+from pydantic import BaseModel
+
+class BlogPost(BaseModel):
+    title: str
+    summary: str
+    sections: list[str]
+
+class BlogPostList(BaseModel):
+    posts: list[BlogPost]
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=BlogPostList,
+)
+
+response = agent.run("Generate 3 blog post ideas about AI trends")
+for post in response.content.posts:
+    print(f"- {post.title}")
+​
+JSON Mode
+Agno uses a JSON fallback automatically when the model lacks native schema support. Set use_json_mode=True to force JSON mode for a model that supports native structured output:
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=MySchema,
+    use_json_mode=True,
+)
+JSON mode instructs the model to respond in JSON but doesn't guarantee schema compliance. Prefer models with native structured output support.
+​
+Related
+Team Structured Output: Configure structured output for teams
+Output Model: Use a separate model to structure output
+Structured Input: Pass validated input to agents

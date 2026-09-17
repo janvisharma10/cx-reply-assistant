@@ -1,0 +1,51 @@
+State Management
+State Management
+
+Copy page
+
+Persist and share data across agent runs, team coordination, and workflow execution
+
+State is data that persists across multiple runs within a session, enabling agents, teams, and workflows to maintain context and remember information.
+Common use cases include managing user-specific data like shopping lists, todo lists, preferences, or any information that needs to persist across interactions. State is managed through session_state, which can be accessed and updated in tools, then automatically persisted to your database.
+​
+How State Works
+State in Agno follows this pattern:
+Initialize - Set default session_state when creating agents, teams, or workflows
+Access - Tools access state via run_context.session_state
+Update - Modifications are automatically persisted to the database
+Load - Subsequent runs in the same session retrieve the stored state
+​
+Basic Example
+Here’s a simple agent that maintains a shopping list:
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.run import RunContext
+
+def add_item(run_context: RunContext, item: str) -> str:
+    """Add an item to the shopping list."""
+    run_context.session_state["shopping_list"].append(item)
+    return f"Added {item}"
+
+agent = Agent(
+    db=SqliteDb(db_file="tmp/state.db"),
+    session_state={"shopping_list": []},  # Default state
+    tools=[add_item],
+    instructions="Shopping list: {shopping_list}",  # State in instructions
+)
+
+agent.print_response("Add milk and eggs")
+print(agent.get_session_state())  # {'shopping_list': ['milk', 'eggs']}
+​
+Learn more
+Agent State
+Store and update session state on a single agent.
+Team State
+Share state across a team and its members.
+Workflow State
+Pass state between workflow steps via run_context.
+​
+Developer Resources
+Agent schema
+Team schema
+Workflow schema
+RunContext schema

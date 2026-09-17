@@ -1,0 +1,59 @@
+Concepts
+Knowledge Content Types
+Add knowledge content from local files, URLs, raw text, topics, and cloud storage.
+
+
+Copy page
+
+Agno Knowledge uses Content as the record for each knowledge source. Content can be added to knowledge from different sources.
+Content Origin	Description
+Path	Local files or directories containing files
+URL	Direct links to files or other sites
+Text	Raw text content
+Topic	Search topics from repositories like arXiv or Wikipedia
+Remote Content	Content from cloud storage providers like S3, GCS, SharePoint, GitHub, and Azure Blob
+Knowledge content needs to be read and chunked before it can be passed to the vector database for embedding, storage, and retrieval. For supported file and URL types, Knowledge selects a reader from the file extension or content type. Raw text uses the text reader. Topic ingestion requires an explicit reader such as ArxivReader or WikipediaReader. Readers parse content from the origin and chunk it into smaller pieces that are then embedded and stored in the vector database.
+To override the default reader or its settings, pass a reader when adding content. The example below creates a PDFReader with a custom chunk_size. Other parameters like chunking_strategy work the same way and control how content is ingested and processed.
+uv pip install -U agno chromadb openai pypdf
+Set OPENAI_API_KEY before running the example. ChromaDB uses Agno’s default OpenAI embedder when no embedder is supplied.
+import asyncio
+
+from agno.knowledge.knowledge import Knowledge
+from agno.knowledge.reader.pdf_reader import PDFReader
+from agno.vectordb.chroma import ChromaDb
+
+reader = PDFReader(
+    chunk_size=1000,
+)
+
+knowledge_base = Knowledge(
+    vector_db=ChromaDb(
+        collection="pdf-content",
+        path="tmp/chromadb",
+        persistent_client=True,
+    ),
+)
+
+asyncio.run(
+    knowledge_base.ainsert(
+        path="data/pdf",
+        reader=reader
+    )
+)
+See Readers for the available readers and their capabilities.
+​
+Next Steps
+Search & Retrieval
+How agents search and find information in your knowledge base
+Readers
+Explore content parsing and ingestion options in detail
+Chunking Strategies
+Optimize how content is broken down for better search results
+Vector Databases
+Choose the right storage solution for your knowledge base
+Was this page helpful?
+
+
+Yes
+
+No

@@ -1,0 +1,76 @@
+For Agents
+State in Context
+
+Copy page
+
+Set a user’s name and age in session state and load those values back across separate sessions and users.
+
+Use session state to carry user context across sessions. State persists and can be retrieved for each user and session.
+1
+Create a Python file
+
+session_state_in_context.py
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+
+db = SqliteDb(db_file="tmp/agent.db")
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    instructions="Users name is {user_name} and age is {age}",
+    db=db,
+)
+
+# Sets the session state for the session with the id "user_1_session_1"
+agent.print_response(
+    "What is my name?",
+    session_id="user_1_session_1",
+    user_id="user_1",
+    session_state={"user_name": "John", "age": 30},
+    stream=True,
+)
+
+# Will load the session state from the session with the id "user_1_session_1"
+agent.print_response("How old am I?", session_id="user_1_session_1", user_id="user_1", stream=True)
+
+# Sets the session state for the session with the id "user_2_session_1"
+agent.print_response(
+    "What is my name?",
+    session_id="user_2_session_1",
+    user_id="user_2",
+    session_state={"user_name": "Jane", "age": 25},
+    stream=True,
+)
+
+# Will load the session state from the session with the id "user_2_session_1"
+agent.print_response("How old am I?", session_id="user_2_session_1", user_id="user_2", stream=True)
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno openai sqlalchemy
+4
+Export your OpenAI API key
+
+​
+Set OpenAI Key
+Set your OPENAI_API_KEY as an environment variable. You can get one from OpenAI.
+
+Mac
+
+Windows
+export OPENAI_API_KEY=sk-***
+5
+Run Agent
+
+python session_state_in_context.py
+Was this page helpful?

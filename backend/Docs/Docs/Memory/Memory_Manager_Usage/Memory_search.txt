@@ -1,0 +1,85 @@
+Memory Manager Usage
+Memory Search
+Retrieve user memories by update time or select related memories with a model.
+
+
+Copy page
+
+MemoryManager.search_user_memories() retrieves memories by update time or asks a model to select memories related to a query.
+​
+Code
+memory-search.py
+from agno.db.postgres import PostgresDb
+from agno.memory import MemoryManager, UserMemory
+from agno.models.openai import OpenAIResponses
+from rich.pretty import pprint
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+memory_db = PostgresDb(db_url=db_url)
+
+memory = MemoryManager(model=OpenAIResponses(id="gpt-5.2"), db=memory_db)
+
+john_doe_id = "john_doe@example.com"
+memory.add_user_memory(
+    memory=UserMemory(memory="The user enjoys hiking in the mountains on weekends"),
+    user_id=john_doe_id,
+)
+memory.add_user_memory(
+    memory=UserMemory(
+        memory="The user enjoys reading science fiction novels before bed"
+    ),
+    user_id=john_doe_id,
+)
+print("John Doe's memories:")
+pprint(memory.get_user_memories(user_id=john_doe_id))
+
+memories = memory.search_user_memories(
+    user_id=john_doe_id, limit=1, retrieval_method="last_n"
+)
+print("\nJohn Doe's last_n memories:")
+pprint(memories)
+
+memories = memory.search_user_memories(
+    user_id=john_doe_id, limit=1, retrieval_method="first_n"
+)
+print("\nJohn Doe's first_n memories:")
+pprint(memories)
+
+memories = memory.search_user_memories(
+    user_id=john_doe_id,
+    query="What does the user like to do on weekends?",
+    retrieval_method="agentic",
+)
+print("\nJohn Doe's memories related to the query (agentic):")
+pprint(memories)
+​
+Retrieval Methods
+Method	Result
+last_n	Most recently updated memories
+first_n	Least recently updated memories
+agentic	Memories a model selects as related to the required query
+​
+Usage
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Set your API key
+
+export OPENAI_API_KEY=xxx
+3
+Install dependencies
+
+uv pip install -U agno openai sqlalchemy 'psycopg[binary]'
+4
+Run example
+
+python memory-search.py
+Was this page helpful?

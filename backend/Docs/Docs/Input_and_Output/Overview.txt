@@ -1,0 +1,64 @@
+Input & Output
+Input & Output
+Pass strings or Pydantic models to agents and teams, then control the response shape.
+
+
+Copy page
+
+Agents and teams accept strings, dictionaries, messages, and Pydantic models. Start with strings. Add schemas when you need validation.
+​
+Choose a Format
+Use Case	Format
+Prototyping, chat interfaces	String input and output
+Data extraction, classification	Structured output
+API responses, pipelines	Structured input and output
+​
+String I/O
+String in, string out:
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+
+agent = Agent(model=OpenAIResponses(id="gpt-5.2"))
+
+response = agent.run("What's the capital of France?")
+print(response.content)  # "The capital of France is Paris."
+​
+Structured I/O
+Use Pydantic models to validate what goes in and what comes back:
+from pydantic import BaseModel, Field
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+
+class ReviewInput(BaseModel):
+    text: str
+    product_id: str
+
+class SentimentResult(BaseModel):
+    sentiment: str = Field(description="positive, negative, or neutral")
+    confidence: float = Field(ge=0, le=1)
+    summary: str = Field(description="One sentence summary")
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    output_schema=SentimentResult,
+)
+
+response = agent.run(
+    input=ReviewInput(text="Love this product!", product_id="SKU-123")
+)
+
+result: SentimentResult = response.content
+print(result.sentiment)   # "positive"
+print(result.confidence)  # 0.95
+​
+Guides
+Structured Input
+Validate data passed to agents and teams.
+Structured Output
+Get validated Pydantic objects instead of text.
+​
+Advanced I/O Features
+Multimodal I/O
+Pass images, audio, video, and files to agents.
+Output Model
+Generate the final response with another model or parse it into a schema.

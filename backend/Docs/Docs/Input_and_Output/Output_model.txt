@@ -1,0 +1,98 @@
+Input & Output
+Output Model
+Generate a replacement response with an output model or convert a response to a schema with a parser model.
+
+
+Copy page
+
+Set output_model to generate the final answer with a second model after the primary model handles the run.
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from agno.tools.hackernews import HackerNewsTools
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5-mini"),
+    tools=[HackerNewsTools()],
+    output_model=OpenAIResponses(id="gpt-5.2"),
+    output_model_prompt="Write a concise report using the supplied research.",
+)
+
+agent.print_response("Summarize the top AI stories on Hacker News")
+​
+How It Works
+The primary model processes the request and handles tool calls.
+Agno removes the primary model’s final assistant message from the run history.
+output_model generates a replacement response from the remaining history, including the user request and tool results.
+If parser_model is configured, it parses that replacement into output_schema.
+output_model receives the run history with the primary final response removed. Use parser_model when the next model must transform the generated content into a Pydantic object.
+​
+Choose a Pipeline
+Goal	Configuration	Final call order
+Return the primary model’s response	model	Primary model
+Generate the final response with another model	model and output_model	Primary, then output
+Convert the response into a schema	model, parser_model, and output_schema	Primary, then parser
+Generate a replacement and structure it	model, output_model, parser_model, and output_schema	Primary, output, then parser
+Each secondary model adds a model call to the run.
+​
+Parameters
+Parameter	Description
+model	Primary model for the run, including reasoning and tool calls
+output_model	Model that generates a replacement final response from the run history
+output_model_prompt	System prompt for output_model
+output_schema	Pydantic model or JSON schema for structured output
+parser_model	Model that converts the preceding response into output_schema
+parser_model_prompt	System prompt for parser_model
+parser_model requires output_schema. Agno logs a warning and skips parsing when no schema is set.
+​
+Control the Output Model
+output_model_prompt replaces the existing system message for the output-model call. Agno inserts it when the run history has no system message.
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from agno.tools.hackernews import HackerNewsTools
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5-mini"),
+    tools=[HackerNewsTools()],
+    output_model=OpenAIResponses(id="gpt-5.2"),
+    output_model_prompt=(
+        "Return an executive summary with three findings and one recommendation."
+    ),
+)
+
+agent.print_response("Research recent developments in AI agents")
+​
+Parse into a Schema
+The parser model receives the preceding model’s content as its user message.
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from pydantic import BaseModel, Field
+
+
+class ArticleSummary(BaseModel):
+    title: str
+    key_points: list[str] = Field(description="Three to five main points")
+    sentiment: str = Field(description="positive, negative, or neutral")
+
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5-mini"),
+    output_schema=ArticleSummary,
+    parser_model=OpenAIResponses(id="gpt-5.2"),
+    parser_model_prompt="Extract only facts present in the supplied response.",
+)
+
+response = agent.run("Summarize recent changes to Python packaging")
+summary: ArticleSummary = response.content
+print(summary.key_points)
+Agno supplies a default structured-output instruction when parser_model_prompt is unset. Set a custom prompt for extraction rules such as date formats, item limits, or field-specific constraints.
+​
+Combine Output and Parser Models
+output_model runs before parser_model. The parser therefore structures the output model’s replacement response.
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5-mini"),
+    output_model=OpenAIResponses(id="gpt-5.2"),
+    output_model_prompt="Write a concise factual summary.",
+    parser_model=OpenAIResponses(id="gpt-5.2"),
+    parser_model_prompt="Map the summary to ArticleSummary.",
+    output_schema=ArticleSummary,
+)

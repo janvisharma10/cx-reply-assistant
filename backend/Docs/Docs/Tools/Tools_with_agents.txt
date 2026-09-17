@@ -1,0 +1,92 @@
+Tools with Agents
+Agent Tools
+Equip agents with functions and toolkits for external actions.
+
+
+Copy page
+
+Agents use tools to take actions and interact with external systems.
+Tools are functions that an Agent can run to achieve tasks. For example: searching the web, running SQL, sending an email or calling APIs. You can use any Python function as a tool or use a pre-built Agno toolkit.
+The general syntax is:
+from agno.agent import Agent
+
+agent = Agent(
+    # Add functions or Toolkits
+    tools=[...],
+)
+The tools list can also be a callable factory, resolved at run time.
+​
+Using a Toolkit
+Agno provides many pre-built toolkits that you can add to your Agents. For example, add the HackerNews toolkit to fetch tech news.
+You can find more toolkits in the Toolkits guide.
+1
+Create News Agent
+
+Create a file news_agent.py
+news_agent.py
+from agno.agent import Agent
+from agno.tools.hackernews import HackerNewsTools
+
+agent = Agent(tools=[HackerNewsTools()], markdown=True)
+agent.print_response("What are the top stories on HackerNews?", stream=True)
+2
+Run the agent
+
+Install dependencies
+uv pip install openai agno
+Run the agent
+python news_agent.py
+​
+Writing your own Tools
+For more control, write your own Python functions and add them as tools to an Agent. For example, here’s how to add a get_top_hackernews_stories tool to an Agent.
+hn_agent.py
+import json
+import httpx
+
+from agno.agent import Agent
+
+def get_top_hackernews_stories(num_stories: int = 10) -> str:
+    """Use this function to get top stories from Hacker News.
+
+    Args:
+        num_stories (int): Number of stories to return. Defaults to 10.
+    """
+
+    # Fetch top story IDs
+    response = httpx.get('https://hacker-news.firebaseio.com/v0/topstories.json')
+    story_ids = response.json()
+
+    # Fetch story details
+    stories = []
+    for story_id in story_ids[:num_stories]:
+        story_response = httpx.get(f'https://hacker-news.firebaseio.com/v0/item/{story_id}.json')
+        story = story_response.json()
+        if "text" in story:
+            story.pop("text", None)
+        stories.append(story)
+    return json.dumps(stories)
+
+agent = Agent(tools=[get_top_hackernews_stories], markdown=True)
+agent.print_response("Summarize the top 5 stories on HackerNews?", stream=True)
+Read more about:
+Available toolkits
+Creating your own tools
+​
+Developer Resources
+Agent schema
+Cookbook
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Overview
+Team with Custom Tools
+github
+x
+linkedin
+youtube
+website

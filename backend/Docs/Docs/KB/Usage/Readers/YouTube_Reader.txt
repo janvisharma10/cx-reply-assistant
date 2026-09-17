@@ -1,0 +1,101 @@
+Readers
+YouTube Reader
+Fetch a YouTube transcript and convert it into knowledge documents.
+
+
+Copy page
+
+YouTubeReader fetches the transcript for a YouTube watch URL and applies recursive chunking by default.
+youtube_reader.py
+from agno.agent import Agent
+from agno.knowledge.knowledge import Knowledge
+from agno.knowledge.reader.youtube_reader import YouTubeReader
+from agno.models.openai import OpenAIResponses
+from agno.vectordb.pgvector import PgVector
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+knowledge = Knowledge(
+    name="YouTube Knowledge Base",
+    description="Knowledge base from YouTube video transcripts",
+    vector_db=PgVector(
+        table_name="youtube_vectors",
+        db_url=db_url,
+    ),
+)
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    knowledge=knowledge,
+    search_knowledge=True,
+)
+
+if __name__ == "__main__":
+    knowledge.insert(
+        url="https://www.youtube.com/watch?v=nLkBNnnA8Ac",
+        metadata={"source": "youtube", "type": "educational"},
+        reader=YouTubeReader(),
+    )
+    agent.print_response(
+        "What are the main topics discussed in the video?",
+        markdown=True,
+    )
+​
+Run the Agent
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Install dependencies
+
+uv pip install -U "agno[youtube]" openai pgvector psycopg sqlalchemy
+3
+Export the API key
+
+export OPENAI_API_KEY=your_openai_api_key_here
+4
+Run PgVector
+
+
+macOS / Linux
+
+Windows
+docker run -d \
+  -e POSTGRES_DB=ai \
+  -e POSTGRES_USER=ai \
+  -e POSTGRES_PASSWORD=ai \
+  -e PGDATA=/var/lib/postgresql \
+  -v pgvolume:/var/lib/postgresql \
+  -p 5532:5432 \
+  --name pgvector \
+  agnohq/pgvector:18
+5
+Run the agent
+
+python youtube_reader.py
+​
+Reader Parameters
+Parameter	Type	Default	Description
+chunking_strategy	Optional[ChunkingStrategy]	RecursiveChunking()	Strategy used to chunk documents
+YouTubeReader also accepts the base Reader constructor parameters.
+Use Knowledge.insert() with YouTubeReader in v2.7.2. Knowledge.ainsert() passes a document name to YouTubeReader.async_read(), which accepts only the URL, so asynchronous knowledge ingestion fails.
+​
+Next Steps
+Task	Guide
+Configure recursive chunking	Recursive Chunking
+Inspect the complete API	YouTube Reader Reference
+Compare available readers	Readers Overview
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Rais

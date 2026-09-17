@@ -1,0 +1,112 @@
+Chunkers
+Code Chunking
+Split source code at AST boundaries with CodeChunking, powered by Chonkie.
+
+
+Copy page
+
+CodeChunking wraps Chonkie’s AST-based code chunker. Configure its tokenizer, token limit, and source language.
+Code chunking supports several built-in tokenizers or a custom Tokenizer instance.
+1
+Create a Python file
+
+
+Code Chunking
+
+Code Chunking with Custom Tokenizer
+from agno.agent import Agent
+from agno.knowledge.chunking.code import CodeChunking
+from agno.knowledge.knowledge import Knowledge
+from agno.knowledge.reader.text_reader import TextReader
+from agno.vectordb.pgvector import PgVector
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+knowledge = Knowledge(
+    vector_db=PgVector(table_name="python_code_chunking", db_url=db_url),
+)
+
+knowledge.insert(
+    url="https://raw.githubusercontent.com/agno-agi/agno/v2.7.2/libs/agno/agno/workflow/workflow.py",
+    reader=TextReader(
+        chunking_strategy=CodeChunking(
+            tokenizer="character",
+            chunk_size=500,
+            language="python",
+        ),
+    ),
+)
+
+agent = Agent(knowledge=knowledge, search_knowledge=True)
+agent.print_response("How does Workflow run its steps?", markdown=True)
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno sqlalchemy psycopg pgvector "chonkie[code]" openai
+4
+Export your OpenAI API key
+
+​
+Set OpenAI Key
+Set your OPENAI_API_KEY as an environment variable. You can get one from OpenAI.
+
+Mac
+
+Windows
+export OPENAI_API_KEY=sk-***
+5
+Run PgVector
+
+
+macOS / Linux
+
+Windows
+docker run -d \
+  -e POSTGRES_DB=ai \
+  -e POSTGRES_USER=ai \
+  -e POSTGRES_PASSWORD=ai \
+  -e PGDATA=/var/lib/postgresql \
+  -v pgvolume:/var/lib/postgresql \
+  -p 5532:5432 \
+  --name pgvector \
+  agnohq/pgvector:18
+6
+Run the script
+
+python code_chunking.py
+​
+Code Chunking Params
+Parameter	Type	Default	Description
+tokenizer	Union[str, TokenizerProtocol]	"character"	The tokenizer for measuring chunk sizes. Supports several built-in tokenizers or a custom Tokenizer instance.
+chunk_size	int	2048	Maximum size of each chunk in tokens (based on the selected tokenizer).
+language	Union[Literal["auto"], Any]	"auto"	The programming language to parse. Use "auto" for automatic detection or specify a tree-sitter language name (e.g., "python", "javascript", "go", "rust").
+include_nodes	bool	False	Whether to include AST nodes. Note: Chonkie's base Chunk type does not store node information.
+chunker_params	Optional[Dict[str, Any]]	None	Additional parameters to pass directly to Chonkie's CodeChunker.
+​
+Developer Resources
+Chonkie Code Chunker
+Chunking overview
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Agentic Chunking
+Custom Chunking
+github
+x
+linkedin
+youtube
+website

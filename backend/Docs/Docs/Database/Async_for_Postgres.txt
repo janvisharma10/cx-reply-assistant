@@ -1,0 +1,81 @@
+Usage
+Async Postgres for Agent
+Store agent sessions and run history asynchronously in PostgreSQL with AsyncPostgresDb.
+
+
+Copy page
+
+AsyncPostgresDb stores an Agent’s sessions and run history asynchronously in PostgreSQL. Use async Agent methods such as arun() and aprint_response().
+​
+Usage
+Install Agno and the Postgres, model, and tool dependencies:
+uv pip install -U agno sqlalchemy "psycopg[binary]" openai ddgs
+export OPENAI_API_KEY="your_openai_api_key_here"
+​
+Run PostgreSQL
+Install Docker Desktop, then start PostgreSQL with pgvector on port 5532:
+docker run -d \
+  -e POSTGRES_DB=ai \
+  -e POSTGRES_USER=ai \
+  -e POSTGRES_PASSWORD=ai \
+  -e PGDATA=/var/lib/postgresql \
+  -v pgvolume:/var/lib/postgresql \
+  -p 5532:5432 \
+  --name pgvector \
+  agnohq/pgvector:18
+async_postgres_for_agent.py
+import asyncio
+
+from agno.agent import Agent
+from agno.db.postgres import AsyncPostgresDb
+from agno.tools.websearch import WebSearchTools
+
+db_url = "postgresql+psycopg_async://ai:ai@localhost:5532/ai"
+db = AsyncPostgresDb(db_url=db_url)
+
+agent = Agent(
+    db=db,
+    tools=[WebSearchTools()],
+    add_history_to_context=True,
+    add_datetime_to_context=True,
+)
+
+
+async def main():
+    try:
+        await agent.aprint_response("How many people live in Canada?")
+        await agent.aprint_response("What is their national anthem called?")
+    finally:
+        await db.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+​
+Run the Example
+Save the code above as async_postgres_for_agent.py, then run:
+python async_postgres_for_agent.py
+​
+Parameters
+Parameter	Type	Default	Description
+id	Optional[str]	-	The ID of the database instance. UUID by default.
+db_url	Optional[str]	-	The database URL to connect to.
+db_engine	Optional[AsyncEngine]	-	The SQLAlchemy async database engine to use.
+db_schema	Optional[str]	-	The database schema to use.
+session_table	Optional[str]	-	Name of the table to store Agent, Team and Workflow sessions.
+memory_table	Optional[str]	-	Name of the table to store memories.
+metrics_table	Optional[str]	-	Name of the table to store metrics.
+eval_table	Optional[str]	-	Name of the table to store evaluation runs data.
+knowledge_table	Optional[str]	-	Name of the table to store knowledge content.
+culture_table	Optional[str]	-	Name of the table to store cultural knowledge.
+traces_table	Optional[str]	-	Name of the table to store traces.
+spans_table	Optional[str]	-	Name of the table to store spans.
+versions_table	Optional[str]	-	Name of the table to store schema versions.
+learnings_table	Optional[str]	-	Name of the table to store learnings.
+schedules_table	Optional[str]	-	Name of the table to store cron schedules.
+schedule_runs_table	Optional[str]	-	Name of the table to store schedule run history.
+approvals_table	Optional[str]	-	Name of the table to store human approval requests.
+auth_tokens_table	Optional[str]	-	Name of the table to store OAuth tokens for external services.
+service_accounts_table	Optional[str]	-	Name of the table to store service accounts.
+create_schema	bool	True	Whether to create the database schema if it doesn't exist. Set to False when the schema is managed externally.
+Was this page helpful?

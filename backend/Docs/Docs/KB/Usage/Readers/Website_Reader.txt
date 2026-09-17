@@ -1,0 +1,67 @@
+Readers
+Website Reader
+Crawl websites and convert pages into knowledge base documents with WebsiteReader.
+
+
+Copy page
+
+WebsiteReader crawls a starting page and discovered links, then creates documents from the extracted page text.
+website_reader.py
+from agno.knowledge.reader.website_reader import WebsiteReader
+
+reader = WebsiteReader(
+    max_depth=2,
+    max_links=5,
+    allowed_hosts=["docs.agno.com"],
+)
+
+documents = reader.read("https://docs.agno.com/")
+for document in documents:
+    print(document.meta_data["url"], len(document.content))
+​
+Run the Reader
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Install dependencies
+
+uv pip install -U beautifulsoup4 agno
+3
+Run the script
+
+python website_reader.py
+​
+Reader Parameters
+Parameter	Type	Default	Description
+chunking_strategy	Optional[ChunkingStrategy]	FixedSizeChunking()	Strategy used to chunk documents
+max_depth	int	3	Maximum depth level for crawling links
+max_links	int	10	Maximum number of links to crawl
+timeout	int	10	Request timeout in seconds
+proxy	Optional[str]	None	Proxy URL used for requests
+allowed_hosts	Optional[List[str]]	None	Hostnames the reader is allowed to fetch from. See Restricting URL Fetches.
+WebsiteReader also accepts the base Reader constructor parameters.
+Set allowed_hosts for every crawl in v2.7.2. The fallback primary-domain check uses a hostname suffix and can admit unrelated hosts whose names end with the same text.
+WebsiteReader.async_read() performs the crawl with asynchronous HTTP requests.
+​
+Next Steps
+Task	Guide
+Restrict outbound requests	Restricting URL Fetches
+Configure content chunking	Chunking Overview
+Inspect the complete API	Website Reader Reference
+Was this page helpful?
+
+
+Yes
+
+No
+Suggest edits
+Raise issue
+Markdown Reader
+LLMs.txt Reader

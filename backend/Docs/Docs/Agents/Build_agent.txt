@@ -1,0 +1,96 @@
+Building Agents
+
+Copy page
+
+Start simple: a model, tools, and instructions.
+
+To build effective agents, start simple: a model, tools, and instructions. Once that works, layer in more functionality as needed. For example, here’s the simplest possible agent with access to HackerNews:
+hackernews_agent.py
+from agno.agent import Agent
+from agno.models.anthropic import Claude
+from agno.tools.hackernews import HackerNewsTools
+
+agent = Agent(
+    model=Claude(id="claude-sonnet-4-5"),
+    tools=[HackerNewsTools()],
+    instructions="Write a report on the topic. Output only the report.",
+    markdown=True,
+)
+agent.print_response("Trending startups and products.", stream=True)
+​
+Run your Agent
+Use Agent.print_response() for development. It prints the response in a readable format in your terminal.
+For production, use Agent.run() or Agent.arun():
+from typing import Iterator
+from agno.agent import Agent, RunOutputEvent, RunEvent
+from agno.models.anthropic import Claude
+from agno.tools.hackernews import HackerNewsTools
+
+agent = Agent(
+    model=Claude(id="claude-sonnet-4-5"),
+    tools=[HackerNewsTools()],
+    instructions="Write a report on the topic. Output only the report.",
+    markdown=True,
+)
+
+# Stream the response
+stream: Iterator[RunOutputEvent] = agent.run("Trending products", stream=True)
+for chunk in stream:
+    if chunk.event == RunEvent.run_content and chunk.content:
+        print(chunk.content)
+​
+Callable Factories
+Pass a function instead of a static list for tools or knowledge. The function is resolved at the start of each run, so the toolset or knowledge base can vary per user or session.
+callable_tools.py
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+from agno.run import RunContext
+from agno.tools.duckduckgo import DuckDuckGoTools
+from agno.tools.yfinance import YFinanceTools
+
+
+def get_tools(run_context: RunContext):
+    role = (run_context.session_state or {}).get("role", "general")
+    if role == "finance":
+        return [YFinanceTools()]
+    return [DuckDuckGoTools()]
+
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5-mini"),
+    tools=get_tools,
+    cache_callables=False,
+)
+
+agent.print_response("AAPL stock price?", session_state={"role": "finance"}, stream=True)
+agent.print_response("Latest AI news?", session_state={"role": "general"}, stream=True)
+​
+Callable Caching Settings
+Factory results are cached by default. The cache key is resolved in this order: custom key function > user_id > session_id. If none are available, caching is skipped and the factory runs every time.
+Setting	Default	Description
+cache_callables	True	Enable or disable caching for all callable factories
+callable_tools_cache_key	None	Custom cache key function for tools factory
+callable_knowledge_cache_key	None	Custom cache key function for knowledge factory
+callable_members_cache_key	None	Custom cache key function for members factory (Team only)
+Set cache_callables=False when session_state changes between runs and the factory should re-evaluate each time.
+Clear cached results programmatically:
+from agno.utils.callables import clear_callable_cache
+
+clear_callable_cache(team)                            # Clear all caches
+clear_callable_cache(team, kind="tools")              # Clear tools cache only
+clear_callable_cache(team, kind="tools", close=True)  # Clear and call .close() on cached resources
+Use aclear_callable_cache() in async code.
+​
+Next Steps
+After getting familiar with the basics, add functionality as needed:
+Task	Guide
+Run agents	Running agents
+Debug agents	Debugging agents
+Manage sessions	Agent sessions
+Handle input/output	Input and output
+Add tools	Tools
+Manage context	Context engineering
+Add knowledge	Knowledge
+Handle images, audio, video, files	Multimodal
+Add guardrails	Guardrails
+Cache responses during development	Response caching

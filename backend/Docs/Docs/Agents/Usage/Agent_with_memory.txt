@@ -1,0 +1,90 @@
+Usage
+Agent with Memory
+
+Copy page
+
+Store user preferences that persist across conversations.
+
+Memory lets your agent remember facts about users across conversations. Unlike storage (which persists conversation history), memory stores user-level information like preferences and context.
+1
+Create a Python file
+
+agent_with_memory.py
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.memory import MemoryManager
+from agno.models.openai import OpenAIResponses
+from agno.tools.yfinance import YFinanceTools
+from rich.pretty import pprint
+
+db = SqliteDb(db_file="tmp/agents.db")
+
+memory_manager = MemoryManager(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=db,
+)
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    tools=[YFinanceTools(all=True)],
+    db=db,
+    memory_manager=memory_manager,
+    enable_agentic_memory=True,
+    markdown=True,
+)
+
+user_id = "investor@example.com"
+
+# Tell the agent about yourself
+agent.print_response(
+    "I'm interested in AI and semiconductor stocks. My risk tolerance is moderate.",
+    user_id=user_id,
+    stream=True,
+)
+
+# The agent now knows your preferences
+agent.print_response(
+    "What stocks would you recommend for me?",
+    user_id=user_id,
+    stream=True,
+)
+
+# View stored memories
+memories = agent.get_user_memories(user_id=user_id)
+print("\nStored Memories:")
+pprint(memories)
+2
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+3
+Install dependencies
+
+uv pip install -U agno openai yfinance sqlalchemy rich
+4
+Export your OpenAI API key
+
+
+Mac/Linux
+
+Windows
+export OPENAI_API_KEY="your_openai_api_key_here"
+5
+Run Agent
+
+python agent_with_memory.py
+​
+Memory vs Storage
+Feature	Storage	Memory
+What it stores	Conversation history	User preferences and facts
+Scope	Per session	Per user (across all sessions)
+Use case	”What did we discuss?"	"What do you know about me?”
+​
+Enabling Memory
+enable_agentic_memory=True (used above): Adds an update_user_memory tool. The model decides whether to call it. Existing memories are added to context.
+update_memory_on_run=True: Runs the memory manager for each non-empty user input. This adds a model call and does not guarantee that every detail becomes a memory.

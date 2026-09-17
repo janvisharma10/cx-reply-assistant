@@ -1,0 +1,33 @@
+from modules.kb.schema import (
+    ChunkingType,
+    ChunkingConfig,
+    KBCreateRequest,
+    KBResponse,
+    DocumentItem,
+    KBDetailResponse,
+    ChunkResponse,
+    DocumentDetailResponse,
+    DocumentUploadResponse,
+    DocumentDeleteResponse,
+    KBDeleteResponse,
+    KBSearchRequest,
+    SearchResultItem,
+    KBSearchResponse,
+)
+
+__all__ = [
+    "ChunkingType",
+    "ChunkingConfig",
+    "KBCreateRequest",
+    "KBResponse",
+    "DocumentItem",
+    "KBDetailResponse",
+    "ChunkResponse",
+    "DocumentDetailResponse",
+    "DocumentUploadResponse",
+    "DocumentDeleteResponse",
+    "KBDeleteResponse",
+    "KBSearchRequest",
+    "SearchResultItem",
+    "KBSearchResponse",
+]

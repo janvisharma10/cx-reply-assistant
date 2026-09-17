@@ -1,0 +1,74 @@
+Usage
+Custom Memory Manager
+Configure MemoryManager with custom memory-capture instructions.
+
+
+Copy page
+
+Pass additional_instructions to append rules to the default memory-manager prompt. Pass system_message to replace the prompt.
+​
+Code
+custom_memory_manager.py
+from agno.agent import Agent
+from agno.db.postgres import PostgresDb
+from agno.memory import MemoryManager
+from agno.models.openai import OpenAIResponses
+from rich.pretty import pprint
+
+db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+
+db = PostgresDb(db_url=db_url)
+
+memory_manager = MemoryManager(
+    model=OpenAIResponses(id="gpt-5.2"),
+    additional_instructions="""
+    IMPORTANT: Don't store any memories about the user's name. Just say "The User" instead of referencing the user's name.
+    """,
+    db=db,
+)
+
+john_doe_id = "john_doe@example.com"
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=db,
+    memory_manager=memory_manager,
+    update_memory_on_run=True,
+    user_id=john_doe_id,
+)
+
+agent.print_response(
+    "My name is John Doe and I like to swim and play soccer.", stream=True
+)
+
+agent.print_response("I don't like to swim", stream=True)
+
+
+memories = agent.get_user_memories(user_id=john_doe_id)
+
+print("John Doe's memories:")
+pprint(memories)
+​
+Usage
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Set your API key
+
+export OPENAI_API_KEY=xxx
+3
+Install dependencies
+
+uv pip install -U agno openai sqlalchemy 'psycopg[binary]'
+4
+Run example
+
+python custom_memory_manager.py
+Was this page helpful?

@@ -1,0 +1,81 @@
+Usage
+Share Memory and History between Agents
+Share session history and user-scoped memory between agents through one database.
+
+
+Copy page
+
+The agents use the same database, session_id, and user_id. History is session-scoped, while memory is user-scoped. Set add_history_to_context=True to load the shared session history and update_memory_on_run=True to run MemoryManager on every run.
+​
+Code
+share_memory_and_history_between_agents.py
+from uuid import uuid4
+
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+
+db = SqliteDb(db_file="tmp/agent_sessions.db")
+
+session_id = str(uuid4())
+user_id = "john_doe@example.com"
+
+agent_1 = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    instructions="You are really friendly and helpful.",
+    db=db,
+    add_history_to_context=True,
+    update_memory_on_run=True,
+)
+
+agent_2 = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    instructions="You are really grumpy and mean.",
+    db=db,
+    add_history_to_context=True,
+    update_memory_on_run=True,
+)
+
+agent_1.print_response(
+    "Hi! My name is John Doe.", session_id=session_id, user_id=user_id
+)
+
+agent_2.print_response("What is my name?", session_id=session_id, user_id=user_id)
+
+agent_2.print_response(
+    "I like to hike in the mountains on weekends.",
+    session_id=session_id,
+    user_id=user_id,
+)
+
+agent_1.print_response("What are my hobbies?", session_id=session_id, user_id=user_id)
+
+agent_1.print_response(
+    "What have we been discussing? Give me bullet points.",
+    session_id=session_id,
+    user_id=user_id,
+)
+​
+Usage
+1
+Set up your virtual environment
+
+
+Mac
+
+Windows
+uv venv --python 3.12
+source .venv/bin/activate
+2
+Set your API key
+
+export OPENAI_API_KEY=xxx
+3
+Install dependencies
+
+uv pip install -U agno openai sqlalchemy
+4
+Run example
+
+python share_memory_and_history_between_agents.py
+Was this page helpful?
