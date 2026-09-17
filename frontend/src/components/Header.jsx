@@ -116,23 +116,23 @@ export default function Header({ activeTab, setActiveTab, healthStatus, systemMe
             background: '#f1f5f9',
             border: '1px solid var(--border-subtle)',
             fontSize: '0.72rem',
-            color: healthStatus === 'online' ? '#047857' : '#b91c1c'
+            color: healthStatus === 'online' ? '#047857' : (healthStatus === 'connecting' ? '#b45309' : '#b91c1c')
           }}>
             <span style={{
               width: '7px',
               height: '7px',
               borderRadius: '50%',
-              backgroundColor: healthStatus === 'online' ? '#10b981' : '#ef4444',
+              backgroundColor: healthStatus === 'online' ? '#10b981' : (healthStatus === 'connecting' ? '#f59e0b' : '#ef4444'),
               boxShadow: healthStatus === 'online' ? '0 0 6px rgba(16, 185, 129, 0.4)' : 'none'
             }} />
             <span style={{ fontWeight: 600 }}>
-              {healthStatus === 'online' ? 'System Online' : 'Connecting...'}
+              {healthStatus === 'online' ? 'System Online' : (healthStatus === 'connecting' ? 'Connecting...' : 'Offline (Waking up...)')}
             </span>
           </div>
 
           {/* Fast API docs link */}
           <a
-            href="http://127.0.0.1:8000/docs"
+            href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
             target="_blank"
             rel="noreferrer"
             className="btn btn-ghost"

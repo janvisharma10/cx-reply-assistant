@@ -52,9 +52,18 @@ export default function App() {
     loadAllData();
     const interval = setInterval(() => {
       fetchHealth()
-        .then((res) => setHealthStatus(res.status === 'healthy' ? 'online' : 'degraded'))
+        .then((res) => {
+          const isHealthy = res.status === 'healthy';
+          setHealthStatus((prev) => {
+            if (prev !== 'online' && isHealthy) {
+              // Backend just came online / woke up from cold start — load agents & KBs
+              loadAllData();
+            }
+            return isHealthy ? 'online' : 'degraded';
+          });
+        })
         .catch(() => setHealthStatus('offline'));
-    }, 15000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
