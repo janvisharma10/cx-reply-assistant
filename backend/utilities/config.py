@@ -1,4 +1,5 @@
 import os
+from typing import ClassVar
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,8 +11,10 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str
     DEFAULT_MODEL: str
     EMBEDDING_MODEL: str = "text-embedding-3-small"
-    DATABASE_URL: str = "sqlite:///./kb_database.db"
-    CHROMA_PERSIST_DIR: str = "./chroma_data"
+    # Hardcoded SQLite database — not loaded from .env
+    DATABASE_URL: ClassVar[str] = "sqlite:///./kb_database.db"
+    # Hardcoded Chroma persist directory — not loaded from .env
+    CHROMA_PERSIST_DIR: ClassVar[str] = "./chroma_data"
     UPLOAD_DIR: str = "./uploads"
 
     # Chunking configurations
@@ -22,7 +25,8 @@ class Settings(BaseSettings):
     LLAMA_GUARD_MODEL: str = "meta-llama/llama-guard-4-12b"
     LLAMA_GUARD_API_KEY: str = ""
     LLAMA_GUARD_BASE_URL: str = ""
-    ENABLE_GUARDRAILS: bool = True
+    # Hardcoded guardrails toggle — not loaded from .env
+    ENABLE_GUARDRAILS: ClassVar[bool] = True
 
     @property
     def effective_guardrail_api_key(self) -> str:
